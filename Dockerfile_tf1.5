@@ -1,7 +1,4 @@
-# docker volume create --driver local --opt type=none --opt device=/home/jacob/Downloads/IM/data_tf1.5 --opt o=bind data_tf1.5
-# docker run --rm -it -v data_tf1.5:/root/data --gpus all --entrypoint /bin/bash --name tf1.5 tf1.5 
-# dockerfile for experimenting with tensorflow 1.5 code
-
+#dockerfile for experimenting with tensorflow 1.5 code
 FROM tensorflow/tensorflow:1.5.1-devel-gpu-py3
 
 ENV DEBIAN_FRONTEND noninteractive
