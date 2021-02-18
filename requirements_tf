@@ -1,0 +1,4 @@
+gin-config
+tensorflow-probability==0.8.0
+tf-agents==0.3.0
+gym[all]
