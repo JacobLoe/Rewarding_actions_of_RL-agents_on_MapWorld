@@ -1,0 +1,16 @@
+FROM tensorflow/tensorflow:1.15.2-gpu-py3
+
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get update && apt-get install -y vim
+
+COPY tf_gpu_test.py /root
+COPY req.txt /root
+
+RUN pip3 install -r req.txt
+
+VOLUME "/data"
+
+WORKDIR /root
+
+ENTRYPOINT ["python3", "tf_gpu_test.py"]
