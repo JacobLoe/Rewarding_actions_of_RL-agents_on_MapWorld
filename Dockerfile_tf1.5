@@ -1,12 +1,12 @@
-# docker volume create --driver local --opt type=none --opt device=/home/jacob/Downloads/IM/data_tf1.5 --opt o=bind data_tf1.5
-# docker run --rm -it -v data_tf1.5:/root/data --gpus all --entrypoint /bin/bash --name tf1.5 tf1.5 
-# dockerfile for experimenting with tensorflow 1.5 code
-
+#dockerfile for experimenting with tensorflow 1.5 code
 FROM tensorflow/tensorflow:1.5.1-devel-gpu-py3
 
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && apt-get install -y vim
+
+#RUN apt-get install -y libglu1-mesa-dev libgl1-mesa-dev libosmesa6-dev xvfb ffmpeg curl patchelf libglfw3 libglfw3-dev cmake zlib1g zlib1g-dev swig
+
 
 COPY tf_gpu_test.py /root
 
