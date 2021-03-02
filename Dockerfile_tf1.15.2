@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y vim
 COPY tf_gpu_test.py /root
 COPY req.txt /root
 
-RUN pip3 install -r req.txt
+RUN pip3 install -r /root/req.txt
 
 VOLUME "/data"
 
