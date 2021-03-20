@@ -1,5 +1,5 @@
 # HRL for text based games
-How to create a conda environment for HRL, adopted after [Shiyu Chen](https://www.chenshiyu.top/blog/2019/06/19/Tutorial-Installation-and-Configuration-of-MuJoCo-Gym-Baselines/):
+How to create a conda environment for hierarchical reinforcement learning.
 
 (Tested with Anaconda ver 4.9.2)
 
