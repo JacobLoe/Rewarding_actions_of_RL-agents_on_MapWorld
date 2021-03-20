@@ -1,5 +1,7 @@
-# pytorch-hDQN
+# Dislaimer
+Cloned from https://github.com/transedward/pytorch-hdqn
 
+# pytorch-hDQN
 `hierarchical-DQN` in pytorch. [[paper]](https://arxiv.org/abs/1604.06057)
 
 ## Results
