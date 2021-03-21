@@ -1,2 +1,3 @@
 .idea
+*/.ipynb_checkpoints
 MUJOCO_LOG.TXT
