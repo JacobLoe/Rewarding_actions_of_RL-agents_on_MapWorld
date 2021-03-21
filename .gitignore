@@ -1,3 +1,4 @@
 .idea
 */.ipynb_checkpoints
 MUJOCO_LOG.TXT
+*/*/__pychache__
