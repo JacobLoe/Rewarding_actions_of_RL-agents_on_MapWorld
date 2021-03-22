@@ -4,7 +4,7 @@
 '''
 
 from transitions import Machine
-from IPython.display import display, Image
+#from IPython.display import display, Image
 
 
 class MapWorld(object):
@@ -65,6 +65,7 @@ class MapWorldWrapper(object):
         description, avail_dirs = self.mw.describe_node(state)
         if show_image:
             image_path = self.image_prefix + '/' + description['instance']
+            # FIXME return image instead of ipython display
             display(Image(filename=image_path, width=400, height=400))
         else:
             print(description)

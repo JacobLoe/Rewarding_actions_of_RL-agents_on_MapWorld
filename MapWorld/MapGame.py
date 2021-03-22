@@ -3,12 +3,11 @@ from mapworld import MapWorld, MapWorldWrapper
 import numpy as np
 import gym
 import cv2
-from nltk.tokenize import sent_tokenize, word_tokenize
-import gensim
-from gensim.models import Word2Vec
 
 
 # FIXME remove unnecessary 'outdoor' rooms from maps.py (church, street etc.)
+
+# FIXME maybe move captioning, embeddings etc into agent
 
 class MapWorldGym(gym.Env):
 
@@ -27,7 +26,7 @@ class MapWorldGym(gym.Env):
         # FIXME load yolo, im2txt word_embeddings models
         self.object_detection_model = 0
         self.image_caption_model = 0
-        self.word_embeddings = 0
+        self.word_embeddings = BertEmbedding()
 
         # the question is the caption generated from a randomly sampled room
         self.question = ''
@@ -35,6 +34,10 @@ class MapWorldGym(gym.Env):
         self.available_actions = []
 
         self.state = []
+
+        # after each step save the current room
+        self.current_room = ''
+        self.target_room = ''
 
         # print(self.n, self.m, self.n_rooms, self.room_types, self.room_repetitions)
 
@@ -50,10 +53,12 @@ class MapWorldGym(gym.Env):
         # FIXME add MapWorldWrapper
         self.mw = MapWorld(ade_map.to_fsa_def(), ['instance', 'type'])
 
+        image_path = 'ADE20k_test.jpeg'
+        # image = cv.
+
         # generate question based on the sampled map
         self.question = self.generate_question()
 
-        #
         # FIXME get randomised initial position
         image = 0
 
@@ -61,7 +66,7 @@ class MapWorldGym(gym.Env):
         self.state = self.get_state(image)
 
         # FIXME get available actions from Map
-        self.available_actions = []
+        self.available_actions = ['north', 'east', 'south', 'west']
 
         # return the initial state/observation
         return [self.state, self.question, self.available_actions]
@@ -137,8 +142,8 @@ class MapWorldGym(gym.Env):
         # FIXME preprocess captions
         captions = self.image_caption_model(image)
 
-
         # FIXME apply word embeddings
+        captions = self.word_embeddings(captions)
         return captions
 
     def get_state(self, image):
@@ -148,10 +153,11 @@ class MapWorldGym(gym.Env):
         :return:
         """
         # FIXME rename function ?
+        objects = self.object_detection_model(image)
         # FIXME preprocess yolo output
 
         # FIXME apply word embeddings
-        state = ''
+        state = self.word_embeddings(objects)
 
         return state
 
@@ -170,8 +176,6 @@ class MapWorldGym(gym.Env):
         image = cv2.imread()
 
         question = self.get_captions(image)
-
-        # FIXME apply word embeddings
         return question
 
     def render(self, mode='human'):
@@ -181,6 +185,10 @@ class MapWorldGym(gym.Env):
 
 if __name__ == '__main__':
 
-    m = MapWorldGym()
+    # m = MapWorldGym()
+    image_path = 'ADE20k_test.jpeg'
+    image = cv2.imread(image_path)
+
+    print(type(image), np.shape(image))
 
 
