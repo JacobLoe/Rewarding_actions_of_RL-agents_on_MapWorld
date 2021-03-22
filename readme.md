@@ -6,7 +6,7 @@ How to create a conda environment for hierarchical reinforcement learning.
 
 Creae and activate conda environement:
 ```
-conda create -n hrl-tb pytorch=1.7.1 matplotlib==2.2.3 networkx==2.2
+conda create -n hrl-tb pytorch=1.7.1 matplotlib==2.2.3 networkx==2.2 nltk==3.4.5 gensim==3.8.3
 conda activate hrl-tb
 ```
 

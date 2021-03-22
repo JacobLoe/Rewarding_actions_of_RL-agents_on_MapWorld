@@ -3,6 +3,9 @@ from mapworld import MapWorld, MapWorldWrapper
 import numpy as np
 import gym
 import cv2
+from nltk.tokenize import sent_tokenize, word_tokenize
+import gensim
+from gensim.models import Word2Vec
 
 
 # FIXME remove unnecessary 'outdoor' rooms from maps.py (church, street etc.)
@@ -29,6 +32,10 @@ class MapWorldGym(gym.Env):
         # the question is the caption generated from a randomly sampled room
         self.question = ''
 
+        self.available_actions = []
+
+        self.state = []
+
         # print(self.n, self.m, self.n_rooms, self.room_types, self.room_repetitions)
 
     def reset(self):
@@ -44,20 +51,20 @@ class MapWorldGym(gym.Env):
         self.mw = MapWorld(ade_map.to_fsa_def(), ['instance', 'type'])
 
         # generate question based on the sampled map
-        self.generate_question()
+        self.question = self.generate_question()
 
         #
         # FIXME get randomised initial position
         image = 0
 
         # FIXME rename state to something clearer
-        state = self.get_state(image)
+        self.state = self.get_state(image)
 
         # FIXME get available actions from Map
-        available_actions = []
+        self.available_actions = []
 
         # return the initial state/observation
-        return [state, self.question, available_actions]
+        return [self.state, self.question, self.available_actions]
 
     def step(self, action):
         """
@@ -68,20 +75,37 @@ class MapWorldGym(gym.Env):
 
         # FIXME penalize wrong actions
         if action == 'n':
-            reward = -10.0
-            state = self.mw.try_transition(action)
+            if action in self.available_actions:
+                reward = -10.0
+                # FIXME apply action to Map, get image and actions
+                image, self.available_actions = ['','']
+
+                # FIXME load image
+
+                self.state = self.get_state(image)
+            else:
+                reward = -50.0
 
         elif action == 'o':
-            reward = -10.0
-            state = self.mw.try_transition(action)
+            if action in self.available_actions:
+                reward = -10.0
+                state = self.mw.try_transition(action)
+            else:
+                reward = -50.0
 
         elif action == 's':
-            reward = -10.0
-            state = self.mw.try_transition(action)
+            if action in self.available_actions:
+                reward = -10.0
+                state = self.mw.try_transition(action)
+            else:
+                reward = -50.0
 
         elif action == 'w':
-            reward = -10.0
-            state = self.mw.try_transition(action)
+            if action in self.available_actions:
+                reward = -10.0
+                state = self.mw.try_transition(action)
+            else:
+                reward = -50.0
 
         elif action == 'answer':
 
@@ -99,6 +123,8 @@ class MapWorldGym(gym.Env):
 
             # Terminate the game
             self.done = True
+
+        state = [self.state, self.question, self.available_actions]
 
         return [state, reward, self.done, {}]   # no clue what the point of the dict is
 
@@ -146,7 +172,7 @@ class MapWorldGym(gym.Env):
         question = self.get_captions(image)
 
         # FIXME apply word embeddings
-        self.question = question
+        return question
 
     def render(self, mode='human'):
         # FIXME probably not really necessary
@@ -157,5 +183,4 @@ if __name__ == '__main__':
 
     m = MapWorldGym()
 
-    print()
 
