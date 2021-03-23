@@ -12,3 +12,6 @@ def get_captions(image):
 
 def get_objects():
     object_detection_model = 0
+
+
+# FIXME write function that takes the most likely action based on the currebtly available ones
