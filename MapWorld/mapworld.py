@@ -4,7 +4,7 @@
 '''
 
 from transitions import Machine
-#from IPython.display import display, Image
+from IPython.display import display, Image
 
 
 class MapWorld(object):

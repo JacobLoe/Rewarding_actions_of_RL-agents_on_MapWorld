@@ -308,7 +308,9 @@ class ADEMap(AbstractMap):
 def make_instance_list(ade_path, categories):
     place_instances = {}
     for this_type in categories:
+        print(this_type)
         full_paths = glob(ade_path + this_type + '/*.jpg')
+        print(full_paths)
         place_instances[this_type] = ['/'.join(this_path.split('/')
                                                [len(ade_path.split('/'))-1:])
                                       for this_path in full_paths]
@@ -324,3 +326,5 @@ def make_and_write_instance_list(ade_path, filename):
         json_s = json.dumps(place_instances, indent=4)
         json_bytes = json_s.encode('utf-8')
         f.write(json_bytes)
+
+make_and_write_instance_list('../../ADE20K_2021_17_01/images/ADE/training/', 'test.json.gz')

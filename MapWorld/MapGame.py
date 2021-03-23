@@ -26,7 +26,7 @@ class MapWorldGym(gym.Env):
         # FIXME load yolo, im2txt word_embeddings models
         self.object_detection_model = 0
         self.image_caption_model = 0
-        self.word_embeddings = BertEmbedding()
+        self.word_embeddings = 0
 
         # the question is the caption generated from a randomly sampled room
         self.question = ''
@@ -53,6 +53,7 @@ class MapWorldGym(gym.Env):
         # FIXME add MapWorldWrapper
         self.mw = MapWorld(ade_map.to_fsa_def(), ['instance', 'type'])
 
+        # FIXME
         image_path = 'ADE20k_test.jpeg'
         # image = cv.
 
@@ -133,18 +134,18 @@ class MapWorldGym(gym.Env):
 
         return [state, reward, self.done, {}]   # no clue what the point of the dict is
 
-    def get_captions(self, image):
-        """
-
-        :param image:
-        :return:
-        """
-        # FIXME preprocess captions
-        captions = self.image_caption_model(image)
-
-        # FIXME apply word embeddings
-        captions = self.word_embeddings(captions)
-        return captions
+    # def get_captions(self, image):
+    #     """
+    #
+    #     :param image:
+    #     :return:
+    #     """
+    #     # FIXME preprocess captions
+    #     captions = self.image_caption_model(image)
+    #
+    #     # FIXME apply word embeddings
+    #     captions = self.word_embeddings(captions)
+    #     return captions
 
     def get_state(self, image):
         """
@@ -172,10 +173,11 @@ class MapWorldGym(gym.Env):
 
         """
         # FIXME sample random image from self.mw
+        self.target_room = 'ADE20k_test'    # save target room for later comparison
+        sample_image_path = '{}.jpeg'.format(self.target_room)
+        sample_image = cv2.imread(sample_image_path)
 
-        image = cv2.imread()
-
-        question = self.get_captions(image)
+        question = self.image_caption_model(sample_image)
         return question
 
     def render(self, mode='human'):
