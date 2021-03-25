@@ -23,3 +23,6 @@ python -m ipykernel install --user --name=hrl-tb
 ```
 
 TODO move conda setup into environment.yml
+```
+conda create -f environment.yml
+```

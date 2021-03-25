@@ -12,12 +12,17 @@ from utils.replay_memory import ReplayMemory, Transition
 USE_CUDA = torch.cuda.is_available()
 dtype = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
+
 class Variable(autograd.Variable):
     def __init__(self, data, *args, **kwargs):
         if USE_CUDA:
             data = data.cuda()
         super(Variable, self).__init__(data, *args, **kwargs)
 
+
+# FIXME adjust architecture to something more complex, possibly the input_features to
+# FIXME LSTM ? easy to implement, cheap to train, maybe to weak
+#  FIXME Attention ? possibly easy to implement, more expensivie to train, definitelx more .. than lstm
 class MetaController(nn.Module):
     def __init__(self, in_features=6, out_features=6):
         """
@@ -33,6 +38,7 @@ class MetaController(nn.Module):
     def forward(self, x):
         x = F.relu(self.fc1(x))
         return self.fc2(x)
+
 
 class Controller(nn.Module):
     def __init__(self, in_features=12, out_features=2):
@@ -57,7 +63,8 @@ class Controller(nn.Module):
 """
 OptimizerSpec = namedtuple("OptimizerSpec", ["constructor", "kwargs"])
 
-class hDQN():
+
+class hDQN:
     """
     The Hierarchical-DQN Agent
     Parameters

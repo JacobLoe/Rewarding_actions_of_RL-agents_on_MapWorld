@@ -1,4 +1,4 @@
-from maps import AbstractMap, ADEMap
+from maps import ADEMap
 from mapworld import MapWorld, MapWorldWrapper
 import numpy as np
 import gym
@@ -8,6 +8,10 @@ import cv2
 # FIXME remove unnecessary 'outdoor' rooms from maps.py (church, street etc.)
 
 # FIXME maybe move captioning, embeddings etc into agent
+
+# FIXME make the returned actios of the env dynamic
+
+# FIXME get correcte ADE20K datset from patrick/Brielen
 
 class MapWorldGym(gym.Env):
 
@@ -32,7 +36,8 @@ class MapWorldGym(gym.Env):
         self.question = ''
         self.target_room = ''
 
-        #
+        # FIXME those probably don't belong here when actions are dynamic
+        # FIXME maybe only give the max num of possible actions
         self.available_actions = ['north', 'east', 'south', 'west', 'answer']
         self.num_actions = len(self.available_actions)
 

@@ -1,0 +1,1 @@
+Contains the code for MapWorld by .. and the derived OpenAi Gym version of MapWorld
