@@ -1,5 +1,5 @@
-from maps import ADEMap
-from mapworld import MapWorld, MapWorldWrapper
+from .maps import ADEMap
+from .mapworld import MapWorld, MapWorldWrapper
 import numpy as np
 import gym
 import cv2
@@ -132,11 +132,11 @@ class MapWorldGym(gym.Env):
 
         self.state = [self.current_room, self.question, self.available_actions]
 
-        return [self.state, reward, self.done, {}]   # no clue what the point of the dict is
+        return [self.state, reward, self.done, {}]   # dict is used to convey info
 
     def generate_question(self):
         """
-        Generate a question string from a image
+        Generate a question string from an image
         """
         # FIXME sample random image from self.mw instead of test image
         self.target_room = 'ADE20k_test'    # save target room for later comparison

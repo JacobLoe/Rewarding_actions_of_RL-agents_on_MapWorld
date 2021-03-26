@@ -6,7 +6,7 @@ class RandomBaseline:
         pass
 
     def select_action(self, num_actions):
-        action = np.random.randint(0, num_actions-1)
+        action = np.random.randint(0, num_actions)
         return action
 
 
