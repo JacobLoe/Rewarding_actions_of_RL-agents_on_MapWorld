@@ -60,7 +60,7 @@ class MapWorldGym(gym.Env):
         # FIXME add MapWorldWrapper
         self.mw = MapWorld(ade_map.to_fsa_def(), ['instance', 'type'])
 
-        image_path = 'ADE20k_test.jpeg'
+        image_path = 'ADE20k_test.jpg'
 
         # generate question based on the sampled map
         self.question = self.generate_question()
@@ -88,7 +88,7 @@ class MapWorldGym(gym.Env):
         if action == 'north':
             reward = -10.0
             # FIXME apply action to Map, get image and actions
-            image_path = 'ADE20k_test.jpeg'
+            image_path = 'ADE20k_test.jpg'
             self.current_room = np.array(cv2.imread(image_path))
             self.available_actions = ['north', 'east', 'south', 'west', 'answer']
 
@@ -97,7 +97,7 @@ class MapWorldGym(gym.Env):
         elif action == 'east':
             reward = -10.0
             # FIXME apply action to Map, get image and actions
-            image_path = 'ADE20k_test.jpeg'
+            image_path = 'ADE20k_test.jpg'
             self.current_room = np.array(cv2.imread(image_path))
             self.available_actions = ['north', 'east', 'south', 'west', 'answer']
 
@@ -106,7 +106,7 @@ class MapWorldGym(gym.Env):
         elif action == 'south':
             reward = -10.0
             # FIXME apply action to Map, get image and actions
-            image_path = 'ADE20k_test.jpeg'
+            image_path = 'ADE20k_test.jpg'
             self.current_room = np.array(cv2.imread(image_path))
             self.available_actions = ['north', 'east', 'south', 'west', 'answer']
 
@@ -115,7 +115,7 @@ class MapWorldGym(gym.Env):
         elif action == 'west':
             reward = -10.0
             # FIXME apply action to Map, get image and actions
-            image_path = 'ADE20k_test.jpeg'
+            image_path = 'ADE20k_test.jpg'
             self.current_room = np.array(cv2.imread(image_path))
             self.available_actions = ['north', 'east', 'south', 'west', 'answer']
 
@@ -153,7 +153,7 @@ class MapWorldGym(gym.Env):
 
 if __name__ == '__main__':
 
-    m = MapWorldGym()
-    i = m.reset()
+    mwg = MapWorldGym()
+    i = mwg.reset()
     for a in ['north', 'east', 'south', 'west', 'answer']:
-        print(m.step(a))
+        print(mwg.step(a))
