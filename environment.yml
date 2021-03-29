@@ -10,6 +10,7 @@ dependencies:
   - pip=21.0.1
   - transitions=0.8.7
   - nltk=3.5
+  - pandas
   - pip:
       - gym==0.17.2
       - opencv-python==4.2.0.32

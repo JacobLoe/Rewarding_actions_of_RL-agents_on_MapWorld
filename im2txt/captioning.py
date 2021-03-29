@@ -1,33 +1,27 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Apr  1 19:33:26 2020
-
-@author: AkashTyagi
-"""
 import os
 import math
 import tensorflow as tf
 from collections import defaultdict
 
-from im2txt import configuration
-from im2txt import inference_wrapper
-from im2txt.inference_utils import caption_generator
-from im2txt.inference_utils import vocabulary
+from .im2txt import configuration
+from .im2txt import inference_wrapper
+from .im2txt.inference_utils import caption_generator
+from .im2txt.inference_utils import vocabulary
 import numpy as np
 
 
 class Captioning:
-    def __init__(self):
+    def __init__(self, model_checkpoint="./checkpoints/5M_iterations/model.ckpt-5000000",
+                 word_counts="./vocab/word_counts.txt"):
         g = tf.Graph()
         with g.as_default():
             print(os.getcwd())
             model = inference_wrapper.InferenceWrapper()
             restore_fn = model.build_graph_from_config(configuration.ModelConfig(),
-                        "./checkpoints/5M_iterations/model.ckpt-5000000")
+                        model_checkpoint)
         g.finalize()
         # Create the vocabulary.
-        self.vocab = vocabulary.Vocabulary("./vocab/word_counts.txt")
+        self.vocab = vocabulary.Vocabulary(word_counts)
         
         self.sess = tf.Session(graph=g)
 
@@ -61,16 +55,3 @@ class Captioning:
                 
     def close_session(self):
         self.sess.close()
-
-
-if __name__ == "__main__":
-    # TODO find out how to change parameters
-    # TODO evaluate how bad the mis-classification is
-
-    obj = Captioning()
-
-    cap = obj.image("../MapWorld/ADE20k_test.jpg")
-
-    print(cap)
-    print(type(cap))
-    print(np.shape(cap))

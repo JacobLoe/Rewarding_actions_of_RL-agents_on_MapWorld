@@ -1,5 +1,7 @@
 from agents import RandomBaseline
 from MapWorld import MapWorldGym
+from im2txt import Captioning
+import numpy as np
 
 if __name__ == '__main__':
 
@@ -16,3 +18,10 @@ if __name__ == '__main__':
         s = mwg.step(action)
         print(s[1:])
 
+    obj = Captioning("./im2txt/checkpoints/5M_iterations/model.ckpt-5000000", './im2txt/vocab/word_counts.txt')
+
+    cap = obj.image("./MapWorld/ADE20k_test.jpg")
+
+    print(cap)
+    print(type(cap))
+    print(np.shape(cap))

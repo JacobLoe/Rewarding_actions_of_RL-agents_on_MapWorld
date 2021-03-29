@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Tests for tensorflow_models.im2txt_captions.show_and_tell_model."""
+"""Tests for tensorflow_models.im2txt.show_and_tell_model."""
 
 from __future__ import absolute_import
 from __future__ import division
