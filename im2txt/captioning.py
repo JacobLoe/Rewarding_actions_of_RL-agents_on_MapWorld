@@ -67,7 +67,7 @@ if __name__ == "__main__":
     # TODO find out how to change parameters
     # TODO evaluate how bad the mis-classification is
 
-    obj = Captioning();
+    obj = Captioning()
 
     cap = obj.image("../MapWorld/ADE20k_test.jpg")
 

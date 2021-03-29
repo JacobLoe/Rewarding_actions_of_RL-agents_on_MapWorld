@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Tests for tensorflow_models.im2txt.ops.image_embedding."""
+"""Tests for tensorflow_models.im2txt_captions.ops.image_embedding."""
 
 from __future__ import absolute_import
 from __future__ import division

@@ -7,6 +7,7 @@ from utils import plotting
 from utils.epsilon_policy import make_epsilon_greedy_policy
 from utils.schedule import LinearSchedule
 
+
 def q_learning(env, num_episodes, discount_factor=1.0, lr=0.00025, exploration_schedule=LinearSchedule(50000, 0.1, 1.0)):
     """
     Q-Learning algorithm: Off-policy TD control. Finds the optimal greedy policy
