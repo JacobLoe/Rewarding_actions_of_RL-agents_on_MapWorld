@@ -1,7 +1,6 @@
 from agents import RandomBaseline
 from MapWorld import MapWorldGym
 from im2txt import Captioning
-import numpy as np
 
 if __name__ == '__main__':
 
@@ -24,4 +23,3 @@ if __name__ == '__main__':
 
     print(cap)
     print(type(cap))
-    print(np.shape(cap))

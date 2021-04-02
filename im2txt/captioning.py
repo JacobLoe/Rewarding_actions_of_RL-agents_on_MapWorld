@@ -7,7 +7,9 @@ from .im2txt import configuration
 from .im2txt import inference_wrapper
 from .im2txt.inference_utils import caption_generator
 from .im2txt.inference_utils import vocabulary
-import numpy as np
+
+# TODO find out how to change parameters
+# TODO evaluate how bad the mis-classification is
 
 
 class Captioning:
@@ -35,11 +37,13 @@ class Captioning:
         :param filename:
         :return:
         """
+        # TODO finalize doc
         result_set = defaultdict(list)
         count = 0
         with tf.gfile.GFile(filename, "rb") as f:
             image = f.read()
         captions = self.generator.beam_search(self.sess, image)
+        # FIXME remove print statements
         print("Captions for image %s:" % os.path.basename(filename))
         for i, caption in enumerate(captions):
             # Ignore begin and end words.
