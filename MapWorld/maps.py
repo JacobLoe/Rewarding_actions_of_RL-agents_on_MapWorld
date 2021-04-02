@@ -123,38 +123,38 @@ class ADEMap(AbstractMap):
     cases, one could imagine textual information also being assigned to rooms.
     '''
 
-    _target_cats = ['b/bathroom', 'b/bedroom', 'k/kitchen',
-                    'b/basement', 'n/nursery', 'a/attic', 'c/childs_room',
-                    'p/playroom', 'd/dining_room', 'h/home_office',
-                    's/staircase', 'u/utility_room', 'l/living_room',
-                    'j/jacuzzi/indoor', 'd/doorway/indoor', 'l/locker_room',
-                    'w/wine_cellar/bottle_storage', 'r/reading_room',
-                    'w/waiting_room', 'b/balcony/interior']
+    _target_cats = ['home_or_hotel/bathroom', 'home_or_hotel/bedroom', 'home_or_hotel/kitchen',
+                    'home_or_hotel/basement', 'home_or_hotel/nursery', 'home_or_hotel/attic', 'home_or_hotel/childs_room',
+                    'home_or_hotel/playroom', 'home_or_hotel/dining_room', 'home_or_hotel/home_office',
+                    'work_place/staircase', 'home_or_hotel/utility_room', 'home_or_hotel/living_room',
+                    'sports_and_leisure/jacuzzi__indoor', 'transportation/doorway__indoor', 'l/locker_room',
+                    'shopping_and_dining/wine_cellar__bottle_storage', 'work_place/reading_room',
+                    'work_place/waiting_room', 'urban/balcony__interior']
 
-    _distractor_cats = ['h/home_theater', 's/storage_room', 'h/hotel_room',
-                        'm/music_studio', 'c/computer_room', 's/street',
-                        'y/yard', 't/tearoom', 'a/art_studio',
-                        'k/kindergarden_classroom', 's/sewing_room',
-                        's/shower', 'v/veranda', 'b/breakroom',
-                        'p/patio', 'g/garage/indoor',
-                        'r/restroom/indoor', 'w/workroom', 'c/corridor',
-                        'g/game_room', 'p/poolroom/home', 'c/cloakroom/room',
-                        'c/closet', 'p/parlor', 'h/hallway', 'r/reception',
-                        'c/carport/indoor', 'h/hunting_lodge/indoor']
+    _distractor_cats = ['home_or_hotel/home_theater', 'work_place/storage_room', 'home_or_hotel/hotel_room',
+                        'cultural/music_studio', 'work_place/computer_room', 'urban/street',
+                        'urban/yard', 'shopping_and_dining/tearoom', 'cultural/art_studio',
+                        'cultural/kindergarden_classroom', 'work_place/sewing_room',
+                        'home_or_hotel/shower', 'v/veranda', 'shopping_and_dining/breakroom',
+                        'urban/patio', 'home_or_hotel/garage__indoor',
+                        'work_place/restroom__indoor', 'work_place/workroom', 'work_place/corridor',
+                        'home_or_hotel/game_room', 'home_or_hotel/poolroom__home', 'shopping_and_dining/cloakroom__room',
+                        'home_or_hotel/closet', 'home_or_hotel/parlor', 'transportation/hallway', 'work_place/reception',
+                        'transportation/carport__indoor', 'home_or_hotel/hunting_lodge__indoor']
     # TODO: remove outdoor categories from this set? Why is there street and yard in here?
 
-    _outdoor_cats = ['g/garage/outdoor', 'a/apartment_building/outdoor',
-                     'j/jacuzzi/outdoor', 'd/doorway/outdoor',
-                     'r/restroom/outdoor', 's/swimming_pool/outdoor',
-                     'c/casino/outdoor', 'k/kiosk/outdoor',
-                     'a/apse/outdoor', 'c/carport/outdoor',
-                     'f/flea_market/outdoor', 'c/chicken_farm/outdoor',
-                     'w/washhouse/outdoor', 'c/cloister/outdoor',
-                     'd/diner/outdoor', 'k/kennel/outdoor',
-                     'h/hunting_lodge/outdoor', 'c/cathedral/outdoor',
-                     'n/newsstand/outdoor', 'p/parking_garage/outdoor',
-                     'c/convenience_store/outdoor', 'b/bistro/outdoor',
-                     'i/inn/outdoor', 'l/library/outdoor']
+    _outdoor_cats = ['urban/garage__outdoor', 'urban/apartment_building__outdoor',
+                     'sports_and_leisure/jacuzzi__outdoor', 'urban/doorway__outdoor',
+                     'urban/restroom__outdoor', 'sports_and_leisure/swimming_pool__outdoor',
+                     'urban/casino__outdoor', 'urban/kiosk__outdoor',
+                     'urban/apse__outdoor', 'urban/carport__outdoor',
+                     'urban/flea_market__outdoor', 'urban/chicken_farm__outdoor',
+                     'urban/washhouse__outdoor', 'urban/cloister__outdoor',
+                     'urban/diner__outdoor', 'urban/kennel__outdoor',
+                     'urban/hunting_lodge__outdoor', 'urban/cathedral__outdoor',
+                     'urban/newsstand__outdoor', 'urban/parking_garage__outdoor',
+                     'urban/convenience_store__outdoor', 'urban/bistro__outdoor',
+                     'urban/inn__outdoor', 'urban/library__outdoor']
 
     # not sure the following is the python way to do this... this is a
     # class attribute, so at least this is only done once...
@@ -330,3 +330,5 @@ def make_and_write_instance_list(ade_path, filename):
         json_s = json.dumps(place_instances, indent=4)
         json_bytes = json_s.encode('utf-8')
         f.write(json_bytes)
+
+# make_and_write_instance_list('../../ADE20K_2021_17_01/images/ADE/training/', 'test.json.gz')
