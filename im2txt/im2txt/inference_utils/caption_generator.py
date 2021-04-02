@@ -179,8 +179,7 @@ class CaptionGenerator(object):
         # Sort the indexes with numpy, select the last self.beam_size
         # (3 by default) (ie, the most likely) and then reverse the sorted
         # indexes with [::-1] to sort them from higher to lower.
-        most_likely_words = np.argsort(word_probabilities)[-self.beam_size:][::-1]
-        #most_likely_words = np.argsort(word_probabilities)[::-1]
+        most_likely_words = np.argsort(word_probabilities)[::-self.beam_size][::-1]   # changed to ada code
 
         for w in most_likely_words:
           p = word_probabilities[w]

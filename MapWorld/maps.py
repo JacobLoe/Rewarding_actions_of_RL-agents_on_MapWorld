@@ -171,7 +171,6 @@ class ADEMap(AbstractMap):
     else:
         raise FileNotFoundError('"ade_cat_instance.json.gz" not found. Run make_and_write_instance_list.py?')
 
-
     def __init__(self, *args):
         if len(args) > 0:
             n, m, n_rooms, target_type_distr = args

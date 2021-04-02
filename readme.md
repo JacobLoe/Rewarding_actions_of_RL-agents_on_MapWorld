@@ -9,9 +9,7 @@ conda create -f environment.yml
 conda activate hrl-tb
 ```
 
-For running jupyter notebooks:
+For using jupyter notebooks run this in the conda environment:
 ```
-conda install -c anaconda ipykernel
-
 python -m ipykernel install --user --name=hrl-tb
 ```

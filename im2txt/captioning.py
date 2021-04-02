@@ -10,11 +10,12 @@ from .im2txt.inference_utils import vocabulary
 
 # TODO find out how to change parameters
 # TODO evaluate how bad the mis-classification is
+# TODO supress tf logging
 
 
 class Captioning:
     def __init__(self, model_checkpoint="./checkpoints/5M_iterations/model.ckpt-5000000",
-                 word_counts="./vocab/word_counts.txt"):
+                 word_counts="./vocab/word_counts.txt", beam_size=3, max_caption_length=40, length_normalization_factor=0.0):
         g = tf.Graph()
         with g.as_default():
             print(os.getcwd())
@@ -29,7 +30,8 @@ class Captioning:
 
         # Load the model from checkpoint.
         restore_fn(self.sess)
-        self.generator = caption_generator.CaptionGenerator(model, self.vocab)
+        self.generator = caption_generator.CaptionGenerator(model, self.vocab, beam_size=beam_size,
+                                                            max_caption_length=max_caption_length, length_normalization_factor=length_normalization_factor)
 
     def image(self, filename):
         """
