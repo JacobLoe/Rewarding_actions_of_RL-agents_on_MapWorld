@@ -47,10 +47,10 @@ class AbstractMap(object):
     This walks by first creating an n*m matrix, and then randomly walking
     around it until the required number of rooms has been created.
     '''
-    dir2delta = {'n': np.array((-1, 0)),
-                 's': np.array((1, 0)),
-                 'e': np.array((0, 1)),
-                 'w': np.array((0, -1))}
+    dir2delta = {'north': np.array((-1, 0)),
+                 'south': np.array((1, 0)),
+                 'east': np.array((0, 1)),
+                 'west': np.array((0, -1))}
 
     def __init__(self, n, m, n_rooms):
         if n*m < n_rooms:
@@ -69,7 +69,7 @@ class AbstractMap(object):
         G.add_node(current_pos)
 
         while map_array.sum() < n_rooms:
-            random_dir = np.random.choice(['n', 's', 'e', 'w'])
+            random_dir = np.random.choice(['north', 'south', 'east', 'west'])
             new_pos = tuple(np.array(current_pos) + self.dir2delta[random_dir])
             if min(new_pos) < 0 or new_pos[0] >= n or new_pos[1] >= m:
                 # illegal move
@@ -127,7 +127,7 @@ class ADEMap(AbstractMap):
                     'home_or_hotel/basement', 'home_or_hotel/nursery', 'home_or_hotel/attic', 'home_or_hotel/childs_room',
                     'home_or_hotel/playroom', 'home_or_hotel/dining_room', 'home_or_hotel/home_office',
                     'work_place/staircase', 'home_or_hotel/utility_room', 'home_or_hotel/living_room',
-                    'sports_and_leisure/jacuzzi__indoor', 'transportation/doorway__indoor', 'l/locker_room',
+                    'sports_and_leisure/jacuzzi__indoor', 'transportation/doorway__indoor', 'sports_and_leisure/locker_room',
                     'shopping_and_dining/wine_cellar__bottle_storage', 'work_place/reading_room',
                     'work_place/waiting_room', 'urban/balcony__interior']
 
@@ -135,13 +135,12 @@ class ADEMap(AbstractMap):
                         'cultural/music_studio', 'work_place/computer_room', 'urban/street',
                         'urban/yard', 'shopping_and_dining/tearoom', 'cultural/art_studio',
                         'cultural/kindergarden_classroom', 'work_place/sewing_room',
-                        'home_or_hotel/shower', 'v/veranda', 'shopping_and_dining/breakroom',
+                        'home_or_hotel/shower', 'urban/veranda', 'shopping_and_dining/breakroom',
                         'urban/patio', 'home_or_hotel/garage__indoor',
                         'work_place/restroom__indoor', 'work_place/workroom', 'work_place/corridor',
                         'home_or_hotel/game_room', 'home_or_hotel/poolroom__home', 'shopping_and_dining/cloakroom__room',
                         'home_or_hotel/closet', 'home_or_hotel/parlor', 'transportation/hallway', 'work_place/reception',
                         'transportation/carport__indoor', 'home_or_hotel/hunting_lodge__indoor']
-    # TODO: remove outdoor categories from this set? Why is there street and yard in here?
 
     _outdoor_cats = ['urban/garage__outdoor', 'urban/apartment_building__outdoor',
                      'sports_and_leisure/jacuzzi__outdoor', 'urban/doorway__outdoor',
@@ -273,14 +272,14 @@ class ADEMap(AbstractMap):
         this_json = self.to_json()
         # transitions
         transitions = this_json['links']
-        dir2delta = {'n': np.array((0, 1)), 's': np.array((0, -1)),
-                     'e': np.array((1, 0)), 'w': np.array((-1, 0))}
+        dir2delta = {'north': np.array((0, 1)), 'south': np.array((0, -1)),
+                     'east': np.array((1, 0)), 'west': np.array((-1, 0))}
         # N.B.: the interpretation of the coordinates has suddenly
         # changed, compared to AbstracMap.. There, the numpy convention
         # was used (row, column). Here, it is now (x, y). Doesn't
         # really matter semantically; I've adapted this here as this
         # is how it is interpreted visually when plotting the graph.
-        flip_dir = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e'}
+        flip_dir = {'north': 'south', 'south': 'north', 'east': 'west', 'west': 'east'}
         out_transitions = []
         for this_transition in transitions:
             for d, o in dir2delta.items():
@@ -314,7 +313,7 @@ class ADEMap(AbstractMap):
 def make_instance_list(ade_path, categories):
     place_instances = {}
     for this_type in categories:
-        full_paths = glob(ade_path + this_type + '/*.jpg')
+        full_paths = glob(os.path.join(ade_path, this_type, '/*.jpg'))
         place_instances[this_type] = ['/'.join(this_path.split('/')
                                                [len(ade_path.split('/'))-1:])
                                       for this_path in full_paths]
@@ -331,4 +330,4 @@ def make_and_write_instance_list(ade_path, filename):
         json_bytes = json_s.encode('utf-8')
         f.write(json_bytes)
 
-# make_and_write_instance_list('../../ADE20K_2021_17_01/images/ADE/training/', 'test.json.gz')
+# make_and_write_instance_list('../../ADE20K_2021_17_01/images/ADE/training/', 'ade_cat_instances.json.gz')

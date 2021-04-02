@@ -4,7 +4,8 @@
 '''
 
 from transitions import Machine
-from IPython.display import display, Image
+from numpy import random
+from os import path
 
 
 class MapWorld(object):
@@ -33,59 +34,65 @@ class MapWorld(object):
         for descriptor in self.node_descriptors:
                 out[descriptor] = (self._get_node(state)[descriptor])
         return (out, [t for t in self.machine.get_triggers(state)
-                      if t in 'n s e w'.split()])
+                      if t in 'north south east west'.split()])
 
     def try_transition(self, trigger):
         if trigger not in self.machine.get_triggers(self.state):
             return (None,
                     [t for t in self.machine.get_triggers(self.state)
-                     if t in 'n s e w'.split()])
+                     if t in 'north south east west'.split()])
         else:
             self.trigger(trigger)
             return self.describe_node(self.state)
 
 
 class MapWorldWrapper(object):
-    '''A convenience wrapper around MapWorld, for use in notebook.
-
-    Can show images realising the instances, in which case the URL
-    is expected to be in "instance" in the node / state / room
-    dictionaries (via the node_descriptors mechanism of MapWorld).
-    '''
-    def __init__(self, map_, node_descriptor=['instance'], show_image=False,
-                 image_prefix=None):
+    def __init__(self, map_, node_descriptor=['instance'], image_prefix=None):
         self.map = map_
         self.mw = MapWorld(map_.to_fsa_def(), node_descriptor)
-        self.show_image = show_image
         self.image_prefix = image_prefix
         # need to describe the initial state as well
-        self.describe_state(self.mw.state, show_image=show_image)
+        self.initial_state = self.describe_state(self.mw.state)
+        # get a random room as the target
+        self.target_room = self.get_target_room(self.mw.nodes)
 
-    def describe_state(self, state, show_image=False):
+    def describe_state(self, state):
+        """
+
+        :param state:
+        Returns:
+
+        """
         description, avail_dirs = self.mw.describe_node(state)
-        if show_image:
-            image_path = self.image_prefix + '/' + description['instance']
-            # FIXME return image instead of ipython display
-            display(Image(filename=image_path, width=400, height=400))
-        else:
-            print(description)
-        self.print_dirs(avail_dirs)
+        image_path = path.join(self.image_prefix, description['instance'])
+        return [image_path, avail_dirs]#self.print_dirs(avail_dirs)]
 
     def print_dirs(self, avail_dirs):
+        # TODO probably not useful
         out_string = 'You can go: {}'.format(' '.join(avail_dirs))
-        print(out_string)
+        return out_string
 
     def upd(self, command):
         if command == 'l':  # look: repeat directions, but don't
             # show image again
-            self.describe_state(self.mw.state, show_image=False)
-        elif command in 'n s e w'.split():
+            self.describe_state(self.mw.state)
+        elif command in 'north south east west'.split():
             description, avail_dirs = self.mw.try_transition(command)
             if description is None:  # transition failed
                 print('Nothing happened.')
-                self.describe_state(self.mw.state, show_image=False)
+                state = self.describe_state(self.mw.state)
             else:
-                self.describe_state(self.mw.state, show_image=self.show_image)
+                state = self.describe_state(self.mw.state)
+        return state
+
+    def get_target_room(self, nodes):
+        """
+        Takes a random room from the map and returns its path
+        :param nodes: list of dictionaries, has to at least contain the id (coordinate on the map)
+        Returns: string, the path to the room
+        """
+        room_id = str(random.choice(nodes)['id'])
+        return self.describe_state(room_id)[0]
 
     def plt(self):
         self.map.plot_graph(state=eval(self.mw.state))
