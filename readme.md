@@ -5,7 +5,7 @@ How to create a conda environment for hierarchical reinforcement learning.
 
 Create and activate conda environment:
 ```
-conda create -f environment.yml
+conda env create -f environment.yml
 conda activate hrl-tb
 ```
 
