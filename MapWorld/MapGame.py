@@ -4,6 +4,7 @@ import numpy as np
 import gym
 import cv2
 from os import path
+from ..im2txt import Captioning
 
 # TODO make the returned actions of the env dynamic
 
@@ -24,7 +25,8 @@ class MapWorldGym(gym.Env):
         self.room_repetitions = room_repetitions
 
         # FIXME load im2txt model
-        self.image_caption_model = 0
+        self.image_caption_model = Captioning("../im2txt/checkpoints/im2txt_5M/model.ckpt-5000000",
+                                              '../im2txt/vocab/word_counts.txt')
 
         #
         self.current_room = []
