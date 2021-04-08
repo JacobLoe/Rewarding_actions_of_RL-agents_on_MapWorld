@@ -1,4 +1,4 @@
-++/.idea
-**/.ipynb_checkpoints
+++/.idea/
+**/.ipynb_checkpoints/
 **/__pycache__/
-im2txt/checkpoints
+im2txt/checkpoints/
