@@ -79,7 +79,6 @@ class MapWorldWrapper(object):
         elif command in 'north south east west'.split():
             description, avail_dirs = self.mw.try_transition(command)
             if description is None:  # transition failed
-                print('Nothing happened.')
                 state = self.describe_state(self.mw.state)
             else:
                 state = self.describe_state(self.mw.state)

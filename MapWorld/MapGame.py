@@ -28,7 +28,6 @@ class MapWorldGym(gym.Env):
         self.room_types = room_types
         self.room_repetitions = room_repetitions
 
-        # FIXME load im2txt model
         self.image_caption_model = Captioning(caption_checkpoints,
                                               caption_vocab)
 
@@ -40,10 +39,8 @@ class MapWorldGym(gym.Env):
         self.question = ''
         self.target_room = ''
 
-        # FIXME those probably don't belong here when actions are dynamic
-        # FIXME maybe only give the max num of possible actions
-        self.available_actions = ['north', 'east', 'south', 'west', 'answer']
-        self.num_actions = len(self.available_actions)
+        self.total_available_actions = ['north', 'east', 'south', 'west', 'answer']
+        self.total_num_actions = len(self.total_available_actions)
 
         # the state consists of: current room as numpy ndarray of shape (, , 3),
         # target room question as string,
@@ -54,12 +51,17 @@ class MapWorldGym(gym.Env):
 
         self.ade_path = ade_path
 
+        # keep track of the total steps taken and the return
+        self.model_return = 0
+        self.model_steps = 0
+
     def reset(self):
         """
         resets the environment to its initial values
         samples a new map, generates a question from the map
         :return: list, returns the current room, question and available actions
         """
+        self.done = False
         # initialise a ne MapWorld object with the parameters set in the init
         ade_map = ADEMap(self.n, self.m, self.n_rooms, (self.room_types, self.room_repetitions))
         self.mw = MapWorldWrapper(ade_map, image_prefix=self.ade_path)
@@ -73,6 +75,10 @@ class MapWorldGym(gym.Env):
         self.current_room = np.array(cv2.imread(initial_state[0]))
 
         self.available_actions = initial_state[1] + ['answer']
+
+        # keep track of the total steps taken and the return
+        self.model_return = 0
+        self.model_steps = 0
 
         # return the initial state
         self.state = [np.shape(self.current_room), self.question, self.available_actions]
@@ -132,6 +138,9 @@ class MapWorldGym(gym.Env):
             self.done = True
             self.state = [self.current_room, self.question, self.available_actions]
 
+        self.model_return += reward
+        self.model_steps += 1
+
         return [self.state, reward, self.done, {}]   # dict is used to convey info
 
     def generate_question_from_image(self, image_path):
@@ -142,7 +151,6 @@ class MapWorldGym(gym.Env):
         :return: the captions and the name/category of the target room as a string
         """
         target_room = path.relpath(image_path, self.ade_path)
-        # TODO extract captions
         question = self.image_caption_model.image(image_path)['1']['Sentence']
         # print('image_path', image_path)
         # print('question', question)
