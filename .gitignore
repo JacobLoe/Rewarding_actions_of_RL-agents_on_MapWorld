@@ -1,5 +1,4 @@
-.idea
-*/.ipynb_checkpoints
-MUJOCO_LOG.TXT
-__pychache__
+++/.idea
+**/.ipynb_checkpoints
+**/__pychache__
 im2txt/checkpoints
