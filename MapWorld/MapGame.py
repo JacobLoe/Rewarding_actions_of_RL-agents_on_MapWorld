@@ -54,6 +54,7 @@ class MapWorldGym(gym.Env):
         # keep track of the total steps taken and the return
         self.model_return = 0
         self.model_steps = 0
+        # TODO add bool to track success of search
 
     def reset(self):
         """

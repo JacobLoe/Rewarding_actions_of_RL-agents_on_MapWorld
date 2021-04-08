@@ -1,30 +1,25 @@
-# from agents import RandomBaseline
+from agents import RandomBaseline
 from MapWorld import MapWorldGym
-# from im2txt import Captioning
 import numpy as np
 # from transformers import AutoModelForCausalLM, AutoTokenizer
 # import torch
+from utils.evaluation import eval_rand_baseline, evaluate_model
 
 
 if __name__ == '__main__':
     mwg = MapWorldGym()
-    initial_state = mwg.reset()
-    print(np.shape(initial_state))
-    print(initial_state)
-    print(mwg.target_room)
-    available_actions = mwg.available_actions
-    num_actions = mwg.num_actions
-    print(num_actions, available_actions)
+    # initial_state = mwg.reset()
+    # print(np.shape(initial_state))
+    # print(initial_state)
+    # print(mwg.target_room)
+    # available_actions = mwg.available_actions
+    # num_actions = mwg.num_actions
+    # print(num_actions, available_actions)
+    rb = RandomBaseline()
 
-    # while not mwg.done:
-    #     action = available_actions[rb.select_action(len(available_actions))]
-    #     s = mwg.step(action)
-    #     available_actions = s[0][2]
-    #     print(s[0][2], s[1])
-
-    # obj = Captioning("./im2txt/checkpoints/5M_iterations/model.ckpt-5000000", './im2txt/vocab/word_counts.txt')
-    #
-    # cap = obj.image("./MapWorld/ADE20k_test.jpg")
-    #
-    # print(cap)
-    # print(type(cap))
+    model_return, model_steps = evaluate_model(mwg, rb, eval_rand_baseline)
+    print(model_return)
+    print(np.mean(model_return))
+    print('-------------------')
+    print(model_steps)
+    print(np.mean(model_steps))
