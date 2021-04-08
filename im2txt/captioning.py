@@ -1,16 +1,16 @@
 import os
 import math
 import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.FATAL)
 from collections import defaultdict
 
-from .im2txt import configuration
-from .im2txt import inference_wrapper
-from .im2txt.inference_utils import caption_generator
-from .im2txt.inference_utils import vocabulary
+from im2txt.im2txt import configuration
+from im2txt.im2txt import inference_wrapper
+from im2txt.im2txt.inference_utils import caption_generator
+from im2txt.im2txt.inference_utils import vocabulary
 
 # TODO find out how to change parameters
 # TODO evaluate how bad the mis-classification is
-# TODO supress tf logging
 
 
 class Captioning:
@@ -18,7 +18,6 @@ class Captioning:
                  word_counts="./vocab/word_counts.txt", beam_size=3, max_caption_length=40, length_normalization_factor=0.0):
         g = tf.Graph()
         with g.as_default():
-            print(os.getcwd())
             model = inference_wrapper.InferenceWrapper()
             restore_fn = model.build_graph_from_config(configuration.ModelConfig(),
                         model_checkpoint)
@@ -45,8 +44,7 @@ class Captioning:
         with tf.gfile.GFile(filename, "rb") as f:
             image = f.read()
         captions = self.generator.beam_search(self.sess, image)
-        # FIXME remove print statements
-        print("Captions for image %s:" % os.path.basename(filename))
+        # print("Captions for image %s:" % os.path.basename(filename))
         for i, caption in enumerate(captions):
             # Ignore begin and end words.
             prob = math.exp(caption.logprob)
@@ -55,8 +53,7 @@ class Captioning:
                 sentence = [self.vocab.id_to_word(w) for w in caption.sentence[1:-1]]
                 sentence = " ".join(sentence)
                 result_set[str(count)]={"Sentence":sentence,"confidence":prob}
-                print("  %d) %s (p=%f)" % (i, sentence, math.exp(caption.logprob)))
-        #os.unlink(filename)
+                # print("  %d) %s (p=%f)" % (i, sentence, math.exp(caption.logprob)))
         return result_set
                 
     def close_session(self):

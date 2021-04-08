@@ -1,10 +1,11 @@
-from .maps import ADEMap
-from .mapworld import MapWorldWrapper
+from MapWorld.maps import ADEMap
+from MapWorld.mapworld import MapWorldWrapper
+from im2txt import Captioning
 import numpy as np
 import gym
 import cv2
 from os import path
-from ..im2txt import Captioning
+
 
 # TODO make the returned actions of the env dynamic
 
@@ -13,7 +14,10 @@ from ..im2txt import Captioning
 
 class MapWorldGym(gym.Env):
 
-    def __init__(self, n=4, m=4, n_rooms=10, room_types=2, room_repetitions=2, ade_path='../ADE20K_2021_17_01/images/ADE/training/'):
+    def __init__(self, n=4, m=4, n_rooms=10, room_types=2, room_repetitions=2,
+                 ade_path='../ADE20K_2021_17_01/images/ADE/training/',
+                 caption_checkpoints="./im2txt/checkpoints/5M_iterations/model.ckpt-5000000",
+                 caption_vocab='./im2txt/vocab/word_counts.txt'):
         # TODO possibly kick out useless variables from init
         # the dimensions of the map
         self.n = n
@@ -25,8 +29,8 @@ class MapWorldGym(gym.Env):
         self.room_repetitions = room_repetitions
 
         # FIXME load im2txt model
-        self.image_caption_model = Captioning("../im2txt/checkpoints/im2txt_5M/model.ckpt-5000000",
-                                              '../im2txt/vocab/word_counts.txt')
+        self.image_caption_model = Captioning(caption_checkpoints,
+                                              caption_vocab)
 
         #
         self.current_room = []
@@ -67,9 +71,6 @@ class MapWorldGym(gym.Env):
         # TODO rescale images to consistent resolution
         self.current_room_name = path.relpath(initial_state[0], self.ade_path)
         self.current_room = np.array(cv2.imread(initial_state[0]))
-
-        print(self.target_room)
-        print(self.current_room_name)
 
         self.available_actions = initial_state[1] + ['answer']
 
@@ -141,9 +142,10 @@ class MapWorldGym(gym.Env):
         :return: the captions and the name/category of the target room as a string
         """
         target_room = path.relpath(image_path, self.ade_path)
-        sample_room = cv2.imread(image_path)
         # TODO extract captions
-        question = 'self.image_caption_model(sample_room)'
+        question = self.image_caption_model.image(image_path)['1']['Sentence']
+        # print('image_path', image_path)
+        # print('question', question)
         return question, target_room
 
     def render(self, mode='human'):
