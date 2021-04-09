@@ -11,6 +11,9 @@ from os import path
 
 # TODO maybe accelerate game by loading all images into cache before hand
 
+# TODO be more specific with type explanation, maybe add shape
+
+# TODO rename answer action and question to not be confusing with qa-model for game two
 
 class MapWorldGym(gym.Env):
 
