@@ -11,9 +11,6 @@ from os import path
 
 # TODO maybe accelerate game by loading all images into cache before hand
 
-# TODO be more specific with type explanation, maybe add shape
-
-# TODO rename answer action and question to not be confusing with qa-model for game two
 
 class MapWorldGym(gym.Env):
 
@@ -27,7 +24,7 @@ class MapWorldGym(gym.Env):
         self.m = m
         # the number of rooms on the map
         self.n_rooms = n_rooms
-        #
+        # TODO add explanation for room types and repetitions (what do they mean)
         self.room_types = room_types
         self.room_repetitions = room_repetitions
 
