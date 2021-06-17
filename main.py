@@ -2,7 +2,7 @@ from agents import RandomBaseline
 from MapWorld import MapWorldGym
 import numpy as np
 # import torch
-from utils.evaluation import eval_rand_baseline, evaluate_model
+from utils import evaluation
 
 
 if __name__ == '__main__':
@@ -17,10 +17,12 @@ if __name__ == '__main__':
 
     rb = RandomBaseline()
 
-    model_return, model_steps = evaluate_model(mwg, rb, eval_rand_baseline, num_iterations=5)
+    model_return, model_steps = evaluation.evaluate_model(mwg, rb, evaluation.eval_rand_baseline, num_iterations=5)
     print('\n-------------------')
     print('Return per model run: ', model_return)
     print('Mean return: ', np.mean(model_return))
     print('-------------------')
     print('Total steps per model run', model_steps)
     print('Mean steps: ', np.mean(model_steps))
+
+    # evaluation.create_histograms(model_return, model_steps)
