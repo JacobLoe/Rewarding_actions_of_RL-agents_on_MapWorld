@@ -17,8 +17,6 @@ need to have the corpus available).
 # - use visual similarity to sample maximally confusable images from
 #   target type.
 
-# FIXME rename directions to full names (n -> north, etc.)
-
 import numpy as np
 import networkx as nx
 

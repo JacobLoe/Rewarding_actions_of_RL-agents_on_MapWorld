@@ -1,9 +1,7 @@
 from agents import RandomBaseline
 from MapWorld import MapWorldGym
-import numpy as np
-# import torch
 from utils import evaluation
-
+import numpy as np
 
 if __name__ == '__main__':
     mwg = MapWorldGym()
@@ -25,4 +23,4 @@ if __name__ == '__main__':
     print('Total steps per model run', model_steps)
     print('Mean steps: ', np.mean(model_steps))
 
-    # evaluation.create_histograms(model_return, model_steps)
+    evaluation.create_histograms(model_return, model_steps)

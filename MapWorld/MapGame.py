@@ -7,8 +7,6 @@ import cv2
 from os import path
 
 
-# TODO make the returned actions of the env dynamic
-
 # TODO maybe accelerate game by loading all images into cache before hand
 
 
@@ -39,6 +37,8 @@ class MapWorldGym(gym.Env):
         self.question = ''
         self.target_room = ''
 
+        # TODO represent observation space and action space as gym.spaces
+        # TODO like in https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py
         self.total_available_actions = ['north', 'east', 'south', 'west', 'answer']
         self.total_num_actions = len(self.total_available_actions)
 
