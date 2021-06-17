@@ -1,3 +1,6 @@
+from tqdm import tqdm
+
+
 def eval_rand_baseline(mapgame, rand_baseline):
     """
 
@@ -57,10 +60,15 @@ def evaluate_model(mapgame, model, eval_function, num_iterations=10):
     """
     model_return = []
     model_steps = []
-    for i in range(num_iterations):
+    for i in tqdm(range(num_iterations)):
 
         r, s = eval_function(mapgame, model)
         model_return.append(r)
         model_steps.append(s)
 
     return model_return, model_steps
+
+
+def create_graphs():
+
+    return 0

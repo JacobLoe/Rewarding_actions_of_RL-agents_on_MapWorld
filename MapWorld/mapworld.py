@@ -65,23 +65,30 @@ class MapWorldWrapper(object):
         """
         description, avail_dirs = self.mw.describe_node(state)
         image_path = path.join(self.image_prefix, description['instance'])
-        return [image_path, avail_dirs]#self.print_dirs(avail_dirs)]
+        # TODO don't return a list
+        return [image_path, self.print_dirs(avail_dirs)]
 
     def print_dirs(self, avail_dirs):
-        # TODO probably not useful
+        # TODO use comma as separator instead of spaces ?
         out_string = 'You can go: {}'.format(' '.join(avail_dirs))
         return out_string
 
     def upd(self, command):
-        if command == 'l':  # look: repeat directions, but don't
-            # show image again
+        # TODO rename function,
+        """
+
+        Args:
+            command:
+
+        Returns:
+
+        """
+        if command == 'l':  # look: repeat directions, but don't show image again
             self.describe_state(self.mw.state)
         elif command in 'north south east west'.split():
-            description, avail_dirs = self.mw.try_transition(command)
-            if description is None:  # transition failed
-                state = self.describe_state(self.mw.state)
-            else:
-                state = self.describe_state(self.mw.state)
+            _, _ = self.mw.try_transition(command)
+            state = self.describe_state(self.mw.state)
+        # TODO don't return list
         return state
 
     def get_target_room(self, nodes):

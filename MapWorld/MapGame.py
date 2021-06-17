@@ -63,10 +63,10 @@ class MapWorldGym(gym.Env):
         :return: list, returns the current room, question and available actions
         """
         self.done = False
-        # initialise a ne MapWorld object with the parameters set in the init
+        # initialise a new MapWorld object with the parameters set in the class init
         ade_map = ADEMap(self.n, self.m, self.n_rooms, (self.room_types, self.room_repetitions))
         self.mw = MapWorldWrapper(ade_map, image_prefix=self.ade_path)
-        initial_state = self.mw.initial_state
+        initial_state = self.mw.initial_state   # the initial state is only needed during the reset
 
         # generate question based on the sampled map
         self.question, self.target_room = self.generate_question_from_image(self.mw.target_room)
@@ -75,7 +75,7 @@ class MapWorldGym(gym.Env):
         self.current_room_name = path.relpath(initial_state[0], self.ade_path)
         self.current_room = np.array(cv2.imread(initial_state[0]))
 
-        self.available_actions = initial_state[1] + ['answer']
+        self.available_actions = initial_state[1] + ' answer'
 
         # keep track of the total steps taken and the return
         self.model_return = 0
@@ -98,7 +98,7 @@ class MapWorldGym(gym.Env):
             state = self.mw.upd(action)
             self.current_room_name = path.relpath(state[0], self.ade_path)
             self.current_room = np.array(cv2.imread(state[0]))
-            self.available_actions = state[1] + ['answer']
+            self.available_actions = state[1] + ' answer'
 
             self.state = [np.shape(self.current_room), self.question, self.available_actions]
 
@@ -107,7 +107,7 @@ class MapWorldGym(gym.Env):
             state = self.mw.upd(action)
             self.current_room_name = path.relpath(state[0], self.ade_path)
             self.current_room = np.array(cv2.imread(state[0]))
-            self.available_actions = state[1] + ['answer']
+            self.available_actions = state[1] + ' answer'
 
             self.state = [np.shape(self.current_room), self.question, self.available_actions]
 
@@ -116,7 +116,7 @@ class MapWorldGym(gym.Env):
             state = self.mw.upd(action)
             self.current_room_name = path.relpath(state[0], self.ade_path)
             self.current_room = np.array(cv2.imread(state[0]))
-            self.available_actions = state[1] + ['answer']
+            self.available_actions = state[1] + ' answer'
 
             self.state = [np.shape(self.current_room), self.question, self.available_actions]
 
@@ -125,7 +125,7 @@ class MapWorldGym(gym.Env):
             state = self.mw.upd(action)
             self.current_room_name = path.relpath(state[0], self.ade_path)
             self.current_room = np.array(cv2.imread(state[0]))
-            self.available_actions = state[1] + ['answer']
+            self.available_actions = state[1] + ' answer'
 
             self.state = [np.shape(self.current_room), self.question, self.available_actions]
 

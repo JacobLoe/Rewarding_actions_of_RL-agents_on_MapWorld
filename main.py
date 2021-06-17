@@ -17,7 +17,7 @@ if __name__ == '__main__':
     rb = RandomBaseline()
 
     model_return, model_steps = evaluate_model(mwg, rb, eval_rand_baseline)
-    print('-------------------')
+    print('\n-------------------')
     print('Return per model run: ', model_return)
     print('Mean return: ', np.mean(model_return))
     print('-------------------')
