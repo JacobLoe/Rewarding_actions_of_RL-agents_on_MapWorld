@@ -70,7 +70,7 @@ class MapWorldWrapper(object):
 
     def print_dirs(self, avail_dirs):
         # TODO use comma as separator instead of spaces ?
-        out_string = 'You can go: {}'.format(' '.join(avail_dirs))
+        out_string = 'You can go: {}'.format(','.join(avail_dirs))
         return out_string
 
     def upd(self, command):

@@ -11,12 +11,13 @@ if __name__ == '__main__':
     # print(np.shape(initial_state))
     # print(initial_state)
     # print(mwg.target_room)
-    # available_actions = mwg.available_actions
-    # num_actions = mwg.num_actions
-    # print(num_actions, available_actions)
+    # directions = mwg.directions
+    # num_actions = mwg.total_num_actions
+    # print(num_actions, directions)
+
     rb = RandomBaseline()
 
-    model_return, model_steps = evaluate_model(mwg, rb, eval_rand_baseline)
+    model_return, model_steps = evaluate_model(mwg, rb, eval_rand_baseline, num_iterations=5)
     print('\n-------------------')
     print('Return per model run: ', model_return)
     print('Mean return: ', np.mean(model_return))

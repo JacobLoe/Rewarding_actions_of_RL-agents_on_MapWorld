@@ -75,14 +75,15 @@ class MapWorldGym(gym.Env):
         self.current_room_name = path.relpath(initial_state[0], self.ade_path)
         self.current_room = np.array(cv2.imread(initial_state[0]))
 
-        self.available_actions = initial_state[1] + ' answer'
+        self.directions = initial_state[1] + ',answer'
+        self.available_actions = self.directions[12:].split()
 
         # keep track of the total steps taken and the return
         self.model_return = 0
         self.model_steps = 0
 
         # return the initial state
-        self.state = [np.shape(self.current_room), self.question, self.available_actions]
+        self.state = [np.shape(self.current_room), self.question, self.directions]
         return self.state
 
     def step(self, action):
@@ -92,69 +93,52 @@ class MapWorldGym(gym.Env):
         :return: list, contains the state, reward and signal if the game is done
         """
 
-        # FIXME penalize wrong actions
-        if action == 'north':
-            reward = -10.0
-            state = self.mw.upd(action)
-            self.current_room_name = path.relpath(state[0], self.ade_path)
-            self.current_room = np.array(cv2.imread(state[0]))
-            self.available_actions = state[1] + ' answer'
-
-            self.state = [np.shape(self.current_room), self.question, self.available_actions]
-
-        elif action == 'east':
-            reward = -10.0
-            state = self.mw.upd(action)
-            self.current_room_name = path.relpath(state[0], self.ade_path)
-            self.current_room = np.array(cv2.imread(state[0]))
-            self.available_actions = state[1] + ' answer'
-
-            self.state = [np.shape(self.current_room), self.question, self.available_actions]
-
-        elif action == 'south':
-            reward = -10.0
-            state = self.mw.upd(action)
-            self.current_room_name = path.relpath(state[0], self.ade_path)
-            self.current_room = np.array(cv2.imread(state[0]))
-            self.available_actions = state[1] + ' answer'
-
-            self.state = [np.shape(self.current_room), self.question, self.available_actions]
-
-        elif action == 'west':
-            reward = -10.0
-            state = self.mw.upd(action)
-            self.current_room_name = path.relpath(state[0], self.ade_path)
-            self.current_room = np.array(cv2.imread(state[0]))
-            self.available_actions = state[1] + ' answer'
-
-            self.state = [np.shape(self.current_room), self.question, self.available_actions]
-
-        elif action == 'answer':
-
+        if action == 'answer':
             if self.current_room_name == self.target_room:
                 reward = 100.0
             else:
                 reward = -100.0
             # Terminate the game
             self.done = True
-            self.state = [self.current_room, self.question, self.available_actions]
+            self.state = [self.current_room, self.question, self.directions]
+        else:
+            reward = self.move(action)
 
         self.model_return += reward
         self.model_steps += 1
 
         return [self.state, reward, self.done, {}]   # dict is used to convey info
 
+    def move(self, action):
+        """
+        Moves in the map according to the action. If the action is not in the available actions stays in the current
+        room and penalizes heavily.
+        Args:
+            action: string, one from north, south, west, east
+
+        Returns: a float, the reward for the action
+        """
+        if action in self.available_actions:
+            reward = -10.0
+            state = self.mw.upd(action)
+            self.current_room_name = path.relpath(state[0], self.ade_path)
+            self.current_room = np.array(cv2.imread(state[0]))
+            self.directions = state[1] + ',answer'
+        else:
+            reward = -100.0
+
+        self.state = [np.shape(self.current_room), self.question, self.directions]
+
+        return reward
+
     def generate_question_from_image(self, image_path):
         """
         Extracts a caption for an image to pose as the room to be found on the map
         :param image_path:
-        Generate a question string from an image
         :return: the captions and the name/category of the target room as a string
         """
         target_room = path.relpath(image_path, self.ade_path)
         question = self.image_caption_model.image(image_path)['1']['Sentence']
-        # print('image_path', image_path)
-        # print('question', question)
         return question, target_room
 
     def render(self, mode='human'):
