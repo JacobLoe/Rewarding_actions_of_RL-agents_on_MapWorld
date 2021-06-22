@@ -15,7 +15,8 @@ class MapWorldGym(gym.Env):
     def __init__(self, n=4, m=4, n_rooms=10, room_types=2, room_repetitions=2,
                  ade_path='../ADE20K_2021_17_01/images/ADE/training/',
                  caption_checkpoints="./im2txt/checkpoints/im2txt_5m/model.ckpt-5000000",
-                 caption_vocab='./im2txt/vocab/word_counts.txt'):
+                 caption_vocab='./im2txt/vocab/word_counts.txt',
+                 image_resolution=(480, 854)):
         # TODO possibly kick out useless variables from init
         # the dimensions of the map
         self.n = n
@@ -56,6 +57,8 @@ class MapWorldGym(gym.Env):
         self.model_steps = 0
         # TODO add bool to track success of search
 
+        self.image_resolution = image_resolution
+
     def reset(self):
         """
         resets the environment to its initial values
@@ -73,17 +76,18 @@ class MapWorldGym(gym.Env):
 
         # TODO rescale images to consistent resolution
         self.current_room_name = path.relpath(initial_state[0], self.ade_path)
-        self.current_room = np.array(cv2.imread(initial_state[0]))
+        self.current_room = self.load_image(initial_state[0], self.image_width)
 
-        self.directions = initial_state[1] + ',answer'
+        self.directions = initial_state[1] + ', answer'
         self.available_actions = self.directions[12:].split()
 
         # keep track of the total steps taken and the return
         self.model_return = 0
         self.model_steps = 0
 
+        # TODO check whether the outputs are numpy arrays (or strings)
         # return the initial state
-        self.state = [np.shape(self.current_room), self.question, self.directions]
+        self.state = [self.current_room, self.question, self.directions]
         return self.state
 
     def step(self, action):
@@ -107,7 +111,7 @@ class MapWorldGym(gym.Env):
         self.model_return += reward
         self.model_steps += 1
 
-        return [self.state, reward, self.done, {}]   # dict is used to convey info
+        return self.state, reward, self.done, {}   # dict is used to convey info
 
     def move(self, action):
         """
@@ -123,7 +127,7 @@ class MapWorldGym(gym.Env):
             state = self.mw.upd(action)
             self.current_room_name = path.relpath(state[0], self.ade_path)
             self.current_room = np.array(cv2.imread(state[0]))
-            self.directions = state[1] + ',answer'
+            self.directions = state[1] + ', answer'
         else:
             reward = -100.0
 
@@ -140,6 +144,21 @@ class MapWorldGym(gym.Env):
         target_room = path.relpath(image_path, self.ade_path)
         question = self.image_caption_model.image(image_path)['1']['Sentence']
         return question, target_room
+
+    def load_image(self, image_path, image_width):
+        """
+        Loads an image from disk and reshapes while keeping the aspect ration intact.
+        Args:
+            image_path: strind
+            image_width: integer
+
+        Returns: Numpy array, reshaped image, height, width, channels,
+        """
+        image = cv2.imread(image_path)
+        image = cv2.resize(image, self.image_resolution)
+        image = np.array(image)
+
+        return image
 
     def render(self, mode='human'):
         # FIXME probably not really necessary

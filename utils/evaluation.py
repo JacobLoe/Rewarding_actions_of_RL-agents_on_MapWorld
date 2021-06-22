@@ -77,7 +77,8 @@ def create_histograms(total_return, steps):
         total_return:
         steps:
     """
-    # TODO FIX width of boxes, fix weird bins
+    # TODO FIX width of boxes
+    # TODO fix weird bins
     r_bins = range(int(min(total_return)), int(max(total_return))+10, 10)
     s_bins = range(int(min(steps)), int(max(steps))+1)
 
