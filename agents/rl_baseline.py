@@ -6,6 +6,9 @@ import torch
 from torch import nn
 from torch import optim
 import torch.nn.functional as F
+from torch.nn import TransformerEncoder, TransformerEncoderLayer
+import math
+
 
 
 class PolicyEstimator:
@@ -115,23 +118,84 @@ def reinforce(env, policy_estimator, num_episodes=2000,
 
 
 class Net(nn.Module):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, ntoken, ninp, nhead, nhid, nlayers, dropout=0.5):
+        super(Net, self).__init__()
+
+        # CNN
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(393120, 120)
+        self.fc1 = nn.Linear(393120, 120)   # layer size is result of image res (480x854)
         self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        self.fc3 = nn.Linear(84, ntoken)
 
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
+        # Transformer
+        self.encoder = nn.Embedding(ntoken, ninp)
+        self.pos_encoder = PositionalEncoding(ninp, dropout)
+        encoder_layers = TransformerEncoderLayer(ninp, nhead, nhid, dropout)
+        self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
+        self.decoder = nn.Linear(200, ntoken)
+
+        self.ntoken = ntoken
+        self.ninp = ninp
+        self.init_weights()
+
+    def forward(self, im, src, src_mask):
+        x = self.pool(F.relu(self.conv1(im)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1) # flatten all dimensions except batch
+        x = torch.flatten(x, 1)     # flatten all dimensions except batch
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
-        return x
+
+        src = self.encoder(src) * math.sqrt(self.ninp)
+        src = self.pos_encoder(src)
+        output = self.transformer_encoder(src, src_mask)
+        output = self.decoder(output)
+
+        print('CNN output:', np.shape(x))
+        print('Transformer output:', np.shape(output))
+
+        output = output.view(-1, self.ntoken)
+
+        print('CNN output:', np.shape(x))
+        print('Transformer output:', np.shape(output))
+
+        z = torch.cat((x, output))
+        print('concat shape', np.shape(z))
+
+        return z
+
+    def generate_square_subsequent_mask(self, sz):
+        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+        return mask
+
+    def init_weights(self):
+        # make initrange a parameter
+        initrange = 0.1
+        self.encoder.weight.data.uniform_(-initrange, initrange)
+        self.decoder.bias.data.zero_()
+        self.decoder.weight.data.uniform_(-initrange, initrange)
+
+
+class PositionalEncoding(nn.Module):
+
+    def __init__(self, d_model, dropout=0.1, max_len=5000):
+        super(PositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(p=dropout)
+
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0).transpose(0, 1)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        x = x + self.pe[:x.size(0), :]
+        return self.dropout(x)
 
 
 if __name__ == '__main__':

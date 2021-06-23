@@ -76,7 +76,7 @@ class MapWorldGym(gym.Env):
 
         # TODO rescale images to consistent resolution
         self.current_room_name = path.relpath(initial_state[0], self.ade_path)
-        self.current_room = self.load_image(initial_state[0], self.image_width)
+        self.current_room = self.load_image(initial_state[0], self.image_resolution)
 
         self.directions = initial_state[1] + ', answer'
         self.available_actions = self.directions[12:].split()
