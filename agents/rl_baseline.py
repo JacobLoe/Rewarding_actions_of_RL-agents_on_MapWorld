@@ -136,7 +136,8 @@ class Net(nn.Module):
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
         self.decoder = nn.Linear(200, ntoken)
 
-
+        self.fc4 = nn.Linear(ntoken, 100)
+        self.fc5 = nn.Linear(100, 5)
 
         self.ntoken = ntoken
         self.ninp = emsize
@@ -159,13 +160,23 @@ class Net(nn.Module):
         # print('Transformer output:', np.shape(output))
 
         output = output.view(-1, self.ntoken)
-        #
-        # print('CNN output:', np.shape(x))
-        # print('Transformer output:', np.shape(output))
+        print('Transformer output:', np.shape(output))
 
+        # TODO rename output
         z = torch.cat((x, output))
-        # print('concat shape', np.shape(z))
+        print('concat shape', np.shape(z))
 
+        z = z.mean(dim=0)
+        print('mean', z, z.size())
+
+        z = self.fc4(z)
+        print(z.size())
+        z = self.fc5(z)
+        print(z.size())
+        # z = z.view(-1)
+        # print(z.size())
+        z = F.softmax(z, dim=0)
+        print(z.size())
         return z
 
     def generate_square_subsequent_mask(self, sz):
