@@ -78,7 +78,7 @@ class MapWorldGym(gym.Env):
         self.current_room_name = path.relpath(initial_state[0], self.ade_path)
         self.current_room = self.load_image(initial_state[0], self.image_resolution)
 
-        self.directions = initial_state[1] + ', answer'
+        self.directions = initial_state[1] + ', answer.'
         self.available_actions = self.directions[12:].split()
 
         # keep track of the total steps taken and the return
@@ -131,7 +131,7 @@ class MapWorldGym(gym.Env):
         else:
             reward = -100.0
 
-        self.state = [np.shape(self.current_room), self.question, self.directions]
+        self.state = [self.current_room, self.question, self.directions]
 
         return reward
 
@@ -143,9 +143,11 @@ class MapWorldGym(gym.Env):
         """
         target_room = path.relpath(image_path, self.ade_path)
         question = self.image_caption_model.image(image_path)['1']['Sentence']
+        # capitalize first letter, remove trailing space and stop, add stop at proper place
+        question = question.capitalize().strip('.').strip() + '.'
         return question, target_room
 
-    def load_image(self, image_path, image_width):
+    def load_image(self, image_path, image_resolution):
         """
         Loads an image from disk and reshapes while keeping the aspect ration intact.
         Args:
@@ -155,7 +157,7 @@ class MapWorldGym(gym.Env):
         Returns: Numpy array, reshaped image, height, width, channels,
         """
         image = cv2.imread(image_path)
-        image = cv2.resize(image, self.image_resolution)
+        image = cv2.resize(image, image_resolution)
         image = np.array(image)
 
         return image
