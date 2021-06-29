@@ -8,6 +8,7 @@ from torch.nn import TransformerEncoder, TransformerEncoderLayer
 import math
 
 
+# https://towardsdatascience.com/learning-reinforcement-learning-reinforce-with-pytorch-5e8ad7fc7da0
 class PolicyEstimator:
     def __init__(self, env):
         self.n_inputs = env.observation_space.shape[0]
