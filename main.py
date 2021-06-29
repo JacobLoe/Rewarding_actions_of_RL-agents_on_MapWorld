@@ -38,30 +38,13 @@ if __name__ == '__main__':
     # batch, channel, width, height
     i = initial_state[0]
     i = np.reshape(i, (np.shape(i)[2], np.shape(i)[1], np.shape(i)[0]))
-    i = np.expand_dims(i, axis=0)
-    x = torch.tensor(i).float().to(device)
-    # net.to(device)
-    # print(net(x))
+    x = torch.FloatTensor([i, i]).to(device)
 
     tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
 
-    text = r"""
-    The room is kitchen with a refrigerator, a sink and a dishwasher. Plates and cups are on the desk. The walls of the kitchen are blue.
-    """
+    text = initial_state[1] + ' ' + initial_state[2]
 
-    inputs = tokenizer.encode_plus(text, add_special_tokens=True)
-    # print(inputs)
-    #
-    print(len(tokenizer.get_vocab()))
-    # TEXT = torchtext.data.Field(tokenize=get_tokenizer("basic_english"),
-    #                             init_token='<sos>',
-    #                             eos_token='<eos>',
-    #                             lower=True)
-    # train_data, val_data, test_data = torchtext.datasets.WikiText2.splits(TEXT)
-    #
-    # # print(train_data)
-    #
-    # TEXT.build_vocab(train_data)
+    inputs = tokenizer.encode_plus(text)
 
     ntokens = len(tokenizer.get_vocab())  # the size of vocabulary
     emsize = 200  # embedding dimension
@@ -69,16 +52,24 @@ if __name__ == '__main__':
     nlayers = 2  # the number of nn.TransformerEncoderLayer in nn.TransformerEncoder
     nhead = 2  # the number of heads in the multiheadattention models
     dropout = 0.2  # the dropout value
+    print('ntokens', ntokens)
     model = Net(ntokens, emsize, nhead, nhid, nlayers, dropout).to(device)
 
-    # print(type(torch.tensor(inputs['input_ids'], device=device)), type(torch.tensor(inputs['attention_mask'], device=device)))
-    # print(type(inputs))
+    a = inputs['input_ids'] #torch.tensor(inputs['input_ids'])
 
-    a = time.time()
+    # print(a)
+    # print(type(a), a.size())
 
-    f = model.forward(im=x, src=torch.tensor(inputs['input_ids'], device=device),
-                        src_mask=torch.tensor(inputs['attention_mask'], device=device))
-    print('output',f)
-    print('type',type(f))
-    print('shape', np.shape(f))
-    print(time.time()-a)
+    print('\n')
+
+    c = [a, a]
+
+    c = torch.LongTensor(c).to(device)
+
+    print('text tensor:', c, c.size(), type(c))
+
+    src_mask = model.generate_square_subsequent_mask(c.size(0)).to(device)
+
+    f = model(x, c, src_mask) #torch.tensor(inputs['input_ids'], device=device), torch.tensor(inputs['attention_mask'], device=device))
+    print('output', f, f.size(), type(f))
+

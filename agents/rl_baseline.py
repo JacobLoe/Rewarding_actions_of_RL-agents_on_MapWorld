@@ -118,26 +118,28 @@ def reinforce(env, policy_estimator, num_episodes=2000,
 
 
 class Net(nn.Module):
-    def __init__(self, ntoken, ninp, nhead, nhid, nlayers, dropout=0.5):
+    def __init__(self, ntoken, emsize, nhead, nhid, nlayers, dropout):
         super(Net, self).__init__()
 
         # CNN
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(393120, 120)   # layer size is result of image res (480x854)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, ntoken)
+        self.fc1 = nn.Linear(393120, 1200)   # layer size is result of image res (480x854)
+        self.fc2 = nn.Linear(1200, 840)
+        self.fc3 = nn.Linear(840, ntoken)
 
         # Transformer
-        self.encoder = nn.Embedding(ntoken, ninp)
-        self.pos_encoder = PositionalEncoding(ninp, dropout)
-        encoder_layers = TransformerEncoderLayer(ninp, nhead, nhid, dropout)
+        self.encoder = nn.Embedding(ntoken, emsize)
+        self.pos_encoder = PositionalEncoding(emsize, dropout)
+        encoder_layers = TransformerEncoderLayer(emsize, nhead, nhid, dropout)
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
         self.decoder = nn.Linear(200, ntoken)
 
+
+
         self.ntoken = ntoken
-        self.ninp = ninp
+        self.ninp = emsize
         self.init_weights()
 
     def forward(self, im, src, src_mask):
@@ -153,16 +155,16 @@ class Net(nn.Module):
         output = self.transformer_encoder(src, src_mask)
         output = self.decoder(output)
 
-        print('CNN output:', np.shape(x))
-        print('Transformer output:', np.shape(output))
+        # print('CNN output:', np.shape(x))
+        # print('Transformer output:', np.shape(output))
 
         output = output.view(-1, self.ntoken)
-
-        print('CNN output:', np.shape(x))
-        print('Transformer output:', np.shape(output))
+        #
+        # print('CNN output:', np.shape(x))
+        # print('Transformer output:', np.shape(output))
 
         z = torch.cat((x, output))
-        print('concat shape', np.shape(z))
+        # print('concat shape', np.shape(z))
 
         return z
 
@@ -172,6 +174,7 @@ class Net(nn.Module):
         return mask
 
     def init_weights(self):
+        # TODO add init for cnn
         # make initrange a parameter
         initrange = 0.1
         self.encoder.weight.data.uniform_(-initrange, initrange)
