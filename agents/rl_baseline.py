@@ -1,14 +1,11 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import gym
-import sys
 import torch
 from torch import nn
 from torch import optim
 import torch.nn.functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 import math
-
 
 
 class PolicyEstimator:
@@ -156,27 +153,18 @@ class Net(nn.Module):
         output = self.transformer_encoder(src, src_mask)
         output = self.decoder(output)
 
-        # print('CNN output:', np.shape(x))
-        # print('Transformer output:', np.shape(output))
-
+        #
         output = output.view(-1, self.ntoken)
-        print('Transformer output:', np.shape(output))
 
         # TODO rename output
         z = torch.cat((x, output))
-        print('concat shape', np.shape(z))
 
+        # average concatenated input to create a consistent size tensor
         z = z.mean(dim=0)
-        print('mean', z, z.size())
 
         z = self.fc4(z)
-        print(z.size())
         z = self.fc5(z)
-        print(z.size())
-        # z = z.view(-1)
-        # print(z.size())
         z = F.softmax(z, dim=0)
-        print(z.size())
         return z
 
     def generate_square_subsequent_mask(self, sz):
@@ -213,7 +201,6 @@ class PositionalEncoding(nn.Module):
 
 
 if __name__ == '__main__':
-    # print("PyTorch:\t{}".format(torch.__version__))
 
     env = gym.make('CartPole-v0')
     policy_est = PolicyEstimator(env)

@@ -6,14 +6,7 @@ import numpy as np
 import time
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn import TransformerEncoder, TransformerEncoderLayer
-from torchtext.datasets import WikiText2
-from torchtext.data.utils import get_tokenizer
-from torchtext.vocab import build_vocab_from_iterator
-import torchtext
-from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+from transformers import AutoTokenizer
 
 if __name__ == '__main__':
     mwg = MapWorldGym()
@@ -32,13 +25,11 @@ if __name__ == '__main__':
     #
     # evaluation.create_histograms(model_return, model_steps)
 
-    # net = Net()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # batch, channel, width, height
     i = initial_state[0]
     i = np.reshape(i, (np.shape(i)[2], np.shape(i)[1], np.shape(i)[0]))
-    x = torch.FloatTensor([i, i]).to(device)
 
     tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
 
@@ -52,24 +43,31 @@ if __name__ == '__main__':
     nlayers = 2  # the number of nn.TransformerEncoderLayer in nn.TransformerEncoder
     nhead = 2  # the number of heads in the multiheadattention models
     dropout = 0.2  # the dropout value
-    print('ntokens', ntokens)
     model = Net(ntokens, emsize, nhead, nhid, nlayers, dropout).to(device)
 
-    a = inputs['input_ids'] #torch.tensor(inputs['input_ids'])
+    inputs = inputs['input_ids']
 
-    # print(a)
-    # print(type(a), a.size())
+    im = [i]
 
-    print('\n')
+    t = [inputs]
 
-    c = [a, a]
+    for z in range(4):
+        print(np.shape(im), type(im))
+        print(np.shape(t), type(t))
 
-    c = torch.LongTensor(c).to(device)
+        x = torch.FloatTensor(im).to(device)
 
-    print('text tensor:', c, c.size(), type(c))
+        c = torch.LongTensor(t).to(device)
 
-    src_mask = model.generate_square_subsequent_mask(c.size(0)).to(device)
+        print('text tensor:', c.size(), type(c))
+        print('image tensor', x.size(), type(x))
 
-    f = model(x, c, src_mask) #torch.tensor(inputs['input_ids'], device=device), torch.tensor(inputs['attention_mask'], device=device))
-    print('output', f, f.size(), type(f))
+        src_mask = model.generate_square_subsequent_mask(c.size(0)).to(device)
+
+        f = model(x, c, src_mask)
+        print('output', f, f.size(), type(f))
+
+        im.append(i)
+        t.append(inputs)
+        print('\n')
 
