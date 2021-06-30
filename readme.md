@@ -11,6 +11,11 @@ conda activate hrl-tb
 
 Download weights for im2txt from https://www.dropbox.com/s/87dm6ly33845p72/im2txt_5M.zip?dl=0 and extract the content to im2txt/checkpoints
 
+```
+wget --max-redirect=20 -O im2txt_5M.zip https://www.dropbox.com/s/87dm6ly33845p72/im2txt_5M.zip?dl=0
+unzip im2txt_5M.zip
+```
+
 For using jupyter notebooks run this in the conda environment:
 ```
 python -m ipykernel install --user --name=hrl-tb
