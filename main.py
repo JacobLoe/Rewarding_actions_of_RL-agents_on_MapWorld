@@ -34,6 +34,8 @@ if __name__ == '__main__':
 
     max_sequence_length = 50
 
+    lr = 0.01 # learning rate
+
     ntokens = len(tokenizer.get_vocab())  # the size of vocabulary
     emsize = 200  # embedding dimension
     nhead = 2  # the number of heads in the multiheadattention models
@@ -41,8 +43,8 @@ if __name__ == '__main__':
     nlayers = 2  # the number of nn.TransformerEncoderLayer in nn.TransformerEncoder
     dropout = 0.2  # the dropout value
     model = Net(ntokens, emsize, nhead, nhid, nlayers, dropout, max_sequence_length, len(available_actions)).to(device)
-    # TODO fix optimizer function
-    # optimizer = optim.Adam(model.network.parameters(), lr=0.01)
+    # TODO maybe also use lr scheduler (adjust lr if) // Gradient clipping
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
     total_rewards = []
     batch_rewards = []
@@ -51,7 +53,7 @@ if __name__ == '__main__':
     batch_states_text = []
     batch_counter = 1
 
-    num_episodes = 5
+    num_episodes = 20
     batch_size = 4
     gamma = 0.99
 
@@ -142,9 +144,9 @@ if __name__ == '__main__':
             print('loss', loss)
             # Calculate gradients
 
-            # loss.backward()
+            loss.backward()
             # Apply gradients
-            # optimizer.step()
+            optimizer.step()
 
             batch_rewards = []
             batch_actions = []

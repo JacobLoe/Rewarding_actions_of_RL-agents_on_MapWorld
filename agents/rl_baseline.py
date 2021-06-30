@@ -122,7 +122,7 @@ def reinforce(env, policy_estimator, num_episodes=2000,
 
                 avg_rewards = np.mean(total_rewards[-100:])
                 # Print running average
-                # print("\rEp: {} Average of last 100: {:.2f}".format(ep + 1, avg_rewards), end="")
+                print("\rEp: {} Average of last 100: {:.2f}".format(ep + 1, avg_rewards), end="")
                 ep += 1
 
     return total_rewards
