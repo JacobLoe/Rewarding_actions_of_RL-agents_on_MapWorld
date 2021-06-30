@@ -116,8 +116,8 @@ if __name__ == '__main__':
         total_rewards.append(mwg.model_return)
 
         # print(np.shape(states_image), np.shape(states_text), np.shape(rewards), np.shape(actions))
-        print('batches shape', np.shape(batch_states_image), np.shape(batch_states_text), np.shape(batch_rewards), np.shape(batch_actions))
-        print('total model steps', mwg.model_steps)
+        # print('batches shape', np.shape(batch_states_image), np.shape(batch_states_text), np.shape(batch_rewards), np.shape(batch_actions))
+        # print('total model steps', mwg.model_steps)
 
         if batch_counter == batch_size:
             # optimizer.zero_grad()
@@ -126,24 +126,27 @@ if __name__ == '__main__':
             inputs_tensor = torch.LongTensor(batch_states_text).to(device)
             src_mask = model.generate_square_subsequent_mask(inputs_tensor.size(0)).to(device)
 
-            reward_tensor = torch.FloatTensor(batch_rewards)
-            action_tensor = torch.LongTensor(batch_actions)
-            print('actions', type(batch_actions), np.shape(batch_actions), type(action_tensor), np.shape(action_tensor))
+            reward_tensor = torch.FloatTensor(batch_rewards).to(device)
+            action_tensor = torch.LongTensor(batch_actions).to(device)
+            # print('actions', type(batch_actions), np.shape(batch_actions), type(action_tensor), np.shape(action_tensor))
             print(batch_actions)
             print(action_tensor)
             # calculate loss
-            print('model ', model(im_tensor, inputs_tensor, src_mask))
+            # print('model ', model(im_tensor, inputs_tensor, src_mask))
             logprob = torch.log(model(im_tensor, inputs_tensor, src_mask))
-            print('logprob', logprob, np.shape(logprob))
 
-            a = action_tensor.unsqueeze(1)
-            print(a, np.shape(a))
-            b = torch.gather(logprob, 1, a)
-            print(b)
-            c = b.squeeze()
-            print(c)
             selected_logprobs = reward_tensor * \
-                                c
-            print('selected_logprobs', selected_logprobs)
+                                torch.gather(logprob, 1, action_tensor.unsqueeze(1)).squeeze()
+            # print('selected_logprobs', selected_logprobs)
             loss = -selected_logprobs.mean()
             print('loss', loss)
+            # Calculate gradients
+
+            # loss.backward()
+            # Apply gradients
+            # optimizer.step()
+
+            batch_rewards = []
+            batch_actions = []
+            batch_states = []
+            batch_counter = 1
