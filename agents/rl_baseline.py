@@ -49,6 +49,7 @@ def reinforce(env, policy_estimator, num_episodes=2000,
                            lr=0.01)
 
     action_space = np.arange(env.action_space.n)
+    print('action space', action_space)
     ep = 0
     while ep < num_episodes:
         s_0 = env.reset()
@@ -88,13 +89,25 @@ def reinforce(env, policy_estimator, num_episodes=2000,
                     # LongTensor
                     action_tensor = torch.LongTensor(
                         batch_actions)
-
+                    # print('actions', type(batch_actions), np.shape(batch_actions), type(action_tensor), np.shape(action_tensor))
+                    # print(batch_actions)
+                    # print(action_tensor)
                     # Calculate loss
+                    print('model ', policy_estimator.predict(state_tensor))
                     logprob = torch.log(
                         policy_estimator.predict(state_tensor))
+                    print('logprob', logprob, np.shape(logprob))
+                    # selected_logprobs = reward_tensor * \
+                    #                     torch.gather(logprob, 1,
+                    #                                  action_tensor.unsqueeze(1)).squeeze()
+                    a = action_tensor.unsqueeze(1)
+                    print(a, np.shape(a))
+                    b = torch.gather(logprob, 1, a)
+                    print(b)
+                    c = b.squeeze()
+                    print(c)
                     selected_logprobs = reward_tensor * \
-                                        torch.gather(logprob, 1,
-                                                     action_tensor.unsqueeze(1)).squeeze()
+                                        c
                     loss = -selected_logprobs.mean()
 
                     # Calculate gradients
@@ -109,33 +122,32 @@ def reinforce(env, policy_estimator, num_episodes=2000,
 
                 avg_rewards = np.mean(total_rewards[-100:])
                 # Print running average
-                print("\rEp: {} Average of last 100: {:.2f}".format(ep + 1, avg_rewards), end="")
+                # print("\rEp: {} Average of last 100: {:.2f}".format(ep + 1, avg_rewards), end="")
                 ep += 1
 
     return total_rewards
 
 
 class Net(nn.Module):
-    def __init__(self, ntoken, emsize, nhead, nhid, nlayers, dropout):
+    def __init__(self, ntoken, emsize, nhead, nhid, nlayers, dropout, max_sequence_length, output_size):
         super(Net, self).__init__()
 
         # CNN
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(393120, 1200)   # layer size is result of image res (480x854)
+        self.fc1 = nn.Linear(393120, 1200)   # layer size is result of image res (480x854) after conv + pool
         self.fc2 = nn.Linear(1200, 840)
-        self.fc3 = nn.Linear(840, ntoken)
+        self.fc3 = nn.Linear(840, max_sequence_length)
 
         # Transformer
         self.encoder = nn.Embedding(ntoken, emsize)
         self.pos_encoder = PositionalEncoding(emsize, dropout)
         encoder_layers = TransformerEncoderLayer(emsize, nhead, nhid, dropout)
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
-        self.decoder = nn.Linear(200, ntoken)
+        # self.decoder = nn.Linear(200, ntoken)
 
-        self.fc4 = nn.Linear(ntoken, 100)
-        self.fc5 = nn.Linear(100, 5)
+        self.fc4 = nn.Linear(2*max_sequence_length, output_size)
 
         self.ntoken = ntoken
         self.ninp = emsize
@@ -152,20 +164,14 @@ class Net(nn.Module):
         src = self.encoder(src) * math.sqrt(self.ninp)
         src = self.pos_encoder(src)
         output = self.transformer_encoder(src, src_mask)
-        output = self.decoder(output)
-
-        #
-        output = output.view(-1, self.ntoken)
+        output = output.mean(dim=2)
+        # output = self.decoder(output)
 
         # TODO rename output
-        z = torch.cat((x, output))
-
-        # average concatenated input to create a consistent size tensor
-        z = z.mean(dim=0)
+        z = torch.cat((x, output), dim=1)
 
         z = self.fc4(z)
-        z = self.fc5(z)
-        z = F.softmax(z, dim=0)
+        z = F.softmax(z, dim=1)
         return z
 
     def generate_square_subsequent_mask(self, sz):
@@ -178,8 +184,8 @@ class Net(nn.Module):
         # make initrange a parameter
         initrange = 0.1
         self.encoder.weight.data.uniform_(-initrange, initrange)
-        self.decoder.bias.data.zero_()
-        self.decoder.weight.data.uniform_(-initrange, initrange)
+        # self.decoder.bias.data.zero_()
+        # self.decoder.weight.data.uniform_(-initrange, initrange)
 
 
 class PositionalEncoding(nn.Module):

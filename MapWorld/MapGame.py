@@ -40,8 +40,7 @@ class MapWorldGym(gym.Env):
 
         # TODO represent observation space and action space as gym.spaces
         # TODO like in https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py
-        self.total_available_actions = ['north', 'east', 'south', 'west', 'answer']
-        self.total_num_actions = len(self.total_available_actions)
+        self.total_available_actions = {0: 'north', 1: 'east', 2: 'south', 3: 'west', 4: 'answer'}
 
         # the state consists of: current room as numpy ndarray of shape (, , 3),
         # target room question as string,
@@ -97,6 +96,8 @@ class MapWorldGym(gym.Env):
         :return: list, contains the state, reward and signal if the game is done
         """
 
+        # map action chosen by agent (integer) to action interpretable by MapWorld
+        action = self.total_available_actions[action]
         if action == 'answer':
             if self.current_room_name == self.target_room:
                 reward = 100.0
