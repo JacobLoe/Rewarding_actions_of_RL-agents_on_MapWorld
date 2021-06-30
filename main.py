@@ -7,7 +7,6 @@ import time
 from tqdm import tqdm
 
 import torch
-from torch import optim
 from transformers import AutoTokenizer, BertModel
 
 
@@ -22,11 +21,8 @@ def discount_rewards(rewards, gamma=0.99):
 
 if __name__ == '__main__':
     mwg = MapWorldGym()
-    # mwg.reset()
     available_actions = mwg.total_available_actions
     action_space = np.arange(len(available_actions))
-    # print(available_actions)
-    # print(len(available_actions))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
@@ -54,12 +50,12 @@ if __name__ == '__main__':
     batch_counter = 1
 
     num_episodes = 20
-    batch_size = 4
+    batch_size = 2
     gamma = 0.99
 
     max_steps = 10
 
-    for i in range(num_episodes):
+    for ep in tqdm(range(num_episodes)):
         s_0 = mwg.reset()
         text = s_0[1]
 
@@ -72,7 +68,6 @@ if __name__ == '__main__':
         steps = 0
         # loop until an episode is finished or 30 steps have been done
         # 30 steps is worse than a agent with random actions
-        print('\n')
         while not done and steps < max_steps:
             # print(steps)
             # preprocess state (image and text)
@@ -108,47 +103,53 @@ if __name__ == '__main__':
             s_0 = s_1
             steps += 1
 
-        # when a episode is finished collect experience
-        batch_rewards.extend(discount_rewards(
-            rewards, gamma))
-        batch_states_image.extend(states_image)
-        batch_states_text.extend(states_text)
-        batch_actions.extend(actions)
-        batch_counter += 1
-        total_rewards.append(mwg.model_return)
+            if done or steps >= max_steps:
+                print(done, steps, max_steps)
+                # when a episode is finished collect experience
+                batch_rewards.extend(discount_rewards(
+                    rewards, gamma))
+                batch_states_image.extend(states_image)
+                batch_states_text.extend(states_text)
+                batch_actions.extend(actions)
+                batch_counter += 1
+                total_rewards.append(mwg.model_return)
 
-        # print(np.shape(states_image), np.shape(states_text), np.shape(rewards), np.shape(actions))
-        # print('batches shape', np.shape(batch_states_image), np.shape(batch_states_text), np.shape(batch_rewards), np.shape(batch_actions))
-        # print('total model steps', mwg.model_steps)
+                # print(np.shape(states_image), np.shape(states_text), np.shape(rewards), np.shape(actions))
+                # print('batches shape', np.shape(batch_states_image), np.shape(batch_states_text), np.shape(batch_rewards), np.shape(batch_actions))
+                # print('total model steps', mwg.model_steps)
 
-        if batch_counter == batch_size:
-            # optimizer.zero_grad()
-            print('Training')
-            im_tensor = torch.FloatTensor(batch_states_image).to(device)
-            inputs_tensor = torch.LongTensor(batch_states_text).to(device)
-            src_mask = model.generate_square_subsequent_mask(inputs_tensor.size(0)).to(device)
+                if batch_counter == batch_size:
+                    # optimizer.zero_grad()
+                    # print('Training')
+                    im_tensor = torch.FloatTensor(batch_states_image).to(device)
+                    inputs_tensor = torch.LongTensor(batch_states_text).to(device)
+                    src_mask = model.generate_square_subsequent_mask(inputs_tensor.size(0)).to(device)
 
-            reward_tensor = torch.FloatTensor(batch_rewards).to(device)
-            action_tensor = torch.LongTensor(batch_actions).to(device)
-            # print('actions', type(batch_actions), np.shape(batch_actions), type(action_tensor), np.shape(action_tensor))
-            print(batch_actions)
-            print(action_tensor)
-            # calculate loss
-            # print('model ', model(im_tensor, inputs_tensor, src_mask))
-            logprob = torch.log(model(im_tensor, inputs_tensor, src_mask))
+                    reward_tensor = torch.FloatTensor(batch_rewards).to(device)
+                    action_tensor = torch.LongTensor(batch_actions).to(device)
+                    # print('actions', type(batch_actions), np.shape(batch_actions), type(action_tensor), np.shape(action_tensor))
+                    # print(batch_actions)
+                    # print(action_tensor)
+                    # calculate loss
+                    # print('model ', model(im_tensor, inputs_tensor, src_mask))
+                    logprob = torch.log(model(im_tensor, inputs_tensor, src_mask))
+                    print(logprob.size(), action_tensor.size())
+                    selected_logprobs = reward_tensor * \
+                                        torch.gather(logprob, 1, action_tensor.unsqueeze(1)).squeeze()
+                    # print('selected_logprobs', selected_logprobs)
+                    loss = -selected_logprobs.mean()
+                    # print('loss', loss)
+                    # Calculate gradients
 
-            selected_logprobs = reward_tensor * \
-                                torch.gather(logprob, 1, action_tensor.unsqueeze(1)).squeeze()
-            # print('selected_logprobs', selected_logprobs)
-            loss = -selected_logprobs.mean()
-            print('loss', loss)
-            # Calculate gradients
+                    loss.backward()
+                    # Apply gradients
+                    optimizer.step()
 
-            loss.backward()
-            # Apply gradients
-            optimizer.step()
-
-            batch_rewards = []
-            batch_actions = []
-            batch_states = []
-            batch_counter = 1
+                    batch_rewards = []
+                    batch_actions = []
+                    batch_states_image = []
+                    batch_states_text = []
+                    batch_counter = 1
+                avg_rewards = np.mean(total_rewards[-100:])
+                # Print running average
+                print("\rEp: {} Average of last 100: {:.2f}".format(ep + 1, avg_rewards), end="")
