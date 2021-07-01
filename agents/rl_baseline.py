@@ -129,7 +129,7 @@ def reinforce(env, policy_estimator, num_episodes=2000,
 
 
 class Net(nn.Module):
-    def __init__(self, ntoken, emsize, nhead, nhid, nlayers, dropout, max_sequence_length, output_size):
+    def __init__(self, emsize, nhead, nhid, nlayers, dropout, max_sequence_length, output_size):
         super(Net, self).__init__()
 
         # CNN
@@ -141,17 +141,13 @@ class Net(nn.Module):
         self.fc3 = nn.Linear(840, max_sequence_length)
 
         # Transformer
-        self.encoder = nn.Embedding(ntoken, emsize)
         self.pos_encoder = PositionalEncoding(emsize, dropout)
         encoder_layers = TransformerEncoderLayer(emsize, nhead, nhid, dropout)
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
-        # self.decoder = nn.Linear(200, ntoken)
 
         self.fc4 = nn.Linear(2*max_sequence_length, output_size)
 
-        self.ntoken = ntoken
-        self.ninp = emsize
-        self.init_weights()
+        # self.init_weights()
 
     def forward(self, im, src, src_mask):
         x = self.pool(F.relu(self.conv1(im)))
@@ -161,11 +157,9 @@ class Net(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
 
-        src = self.encoder(src) * math.sqrt(self.ninp)
         src = self.pos_encoder(src)
         output = self.transformer_encoder(src, src_mask)
         output = output.mean(dim=2)
-        # output = self.decoder(output)
 
         # TODO rename output
         z = torch.cat((x, output), dim=1)
@@ -183,7 +177,7 @@ class Net(nn.Module):
         # TODO add init for cnn
         # make initrange a parameter
         initrange = 0.1
-        self.encoder.weight.data.uniform_(-initrange, initrange)
+        # self.encoder.weight.data.uniform_(-initrange, initrange)
         # self.decoder.bias.data.zero_()
         # self.decoder.weight.data.uniform_(-initrange, initrange)
 
