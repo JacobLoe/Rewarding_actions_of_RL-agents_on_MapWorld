@@ -2,7 +2,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 
-def eval_rand_baseline(mapgame, rand_baseline):
+def run_rand_baseline(mapgame, rand_baseline):
     """
 
     Args:
@@ -14,10 +14,10 @@ def eval_rand_baseline(mapgame, rand_baseline):
     """
     _ = mapgame.reset()
     available_actions = mapgame.total_available_actions
-    while not mapgame.done:
-        i = rand_baseline.select_action(len(available_actions))
-        action = available_actions[i]
-        _ = mapgame.step(action)
+    done = False
+    while not done:
+        action = rand_baseline.select_action(len(available_actions))
+        _, _, done, _ = mapgame.step(action)
     return mapgame.model_return, mapgame.model_steps
 
 

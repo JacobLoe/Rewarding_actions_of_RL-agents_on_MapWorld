@@ -8,7 +8,7 @@ from os import path
 
 
 # TODO maybe accelerate game by loading all images into cache before hand
-
+# TODO add option for turning on "dynamic" actions, the agent can only choose actions that are actually available
 
 class MapWorldGym(gym.Env):
 
@@ -99,10 +99,11 @@ class MapWorldGym(gym.Env):
         # map action chosen by agent (integer) to action interpretable by MapWorld
         action = self.total_available_actions[action]
         if action == 'answer':
+            # TODO increase reward for finishing game substantially in comparison to step reward
             if self.current_room_name == self.target_room:
-                reward = 100.0
+                reward = 1000.0
             else:
-                reward = -100.0
+                reward = -1000.0
             # Terminate the game
             self.done = True
             self.state = [self.current_room, self.question, self.directions]
@@ -124,12 +125,14 @@ class MapWorldGym(gym.Env):
         Returns: a float, the reward for the action
         """
         if action in self.available_actions:
+            # TODO maybe make step reward linear increasing. Early steps are cheap, later costly
             reward = -10.0
             state = self.mw.upd(action)
             self.current_room_name = path.relpath(state[0], self.ade_path)
             self.current_room = np.array(cv2.imread(state[0]))
             self.directions = state[1] + ', answer'
         else:
+            # TODO not sure what the correct reward here would be for taking an unavailable action
             reward = -100.0
 
         self.state = [self.current_room, self.question, self.directions]

@@ -8,34 +8,10 @@ from transformers import AutoTokenizer, BertModel
 from tqdm import tqdm
 
 
+# adapted from:
 # https://towardsdatascience.com/learning-reinforcement-learning-reinforce-with-pytorch-5e8ad7fc7da0
-class PolicyEstimator:
-    def __init__(self, env):
-        self.n_inputs = env.observation_space.shape[0]
-        self.n_outputs = env.action_space.n
-
-        # Define network
-        self.network = nn.Sequential(
-            nn.Linear(self.n_inputs, 16),
-            nn.ReLU(),
-            nn.Linear(16, self.n_outputs),
-            nn.Softmax(dim=-1))
-
-    def predict(self, state):
-        action_probs = self.network(torch.FloatTensor(state))
-        return action_probs
-
-
-def discount_rewards(rewards, gamma=0.99):
-    r = np.array([gamma**i * rewards[i]
-        for i in range(len(rewards))])
-    # Reverse the array direction for cumsum and then
-    # revert back to the original order
-    r = r[::-1].cumsum()[::-1]
-    return r - r.mean()
-
-
 def reinforce(mwg):
+    # TODO make model weights save-/loadable
     available_actions = mwg.total_available_actions
     action_space = np.arange(len(available_actions))
 
@@ -52,11 +28,13 @@ def reinforce(mwg):
     nlayers = 2  # the number of nn.TransformerEncoderLayer in nn.TransformerEncoder
     dropout = 0.2  # the dropout value
     max_sequence_length = 25    # maximum length the text state of the env will get padded to
-    model = Net(emsize, nhead, nhid, nlayers, dropout, max_sequence_length, len(available_actions)).to(device)
+    model = RLBaseline(emsize, nhead, nhid, nlayers, dropout, max_sequence_length, len(available_actions)).to(device)
     # TODO maybe also use lr scheduler (adjust lr if) // Gradient clipping
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
     total_rewards = []
+    total_steps = []
+
     batch_rewards = []
     batch_actions = []
     batch_states_image = []
@@ -70,8 +48,6 @@ def reinforce(mwg):
     max_steps = 10
 
     for ep in tqdm(range(num_episodes)):
-
-
 
         s_0 = mwg.reset()
         text = s_0[1]
@@ -131,6 +107,7 @@ def reinforce(mwg):
                 batch_actions.extend(actions)
                 batch_counter += 1
                 total_rewards.append(mwg.model_return)
+                total_steps.append(steps)
 
                 if batch_counter == batch_size:
                     optimizer.zero_grad()
@@ -162,10 +139,21 @@ def reinforce(mwg):
                 # Print running average
                 print("\rEp: {} Average of last 100: {:.2f}".format(ep + 1, avg_rewards), end="")
 
+    return total_rewards, total_steps
 
-class Net(nn.Module):
+
+def discount_rewards(rewards, gamma=0.99):
+    r = np.array([gamma**i * rewards[i]
+        for i in range(len(rewards))])
+    # Reverse the array direction for cumsum and then
+    # revert back to the original order
+    r = r[::-1].cumsum()[::-1]
+    return r - r.mean()
+
+
+class RLBaseline(nn.Module):
     def __init__(self, emsize, nhead, nhid, nlayers, dropout, max_sequence_length, output_size):
-        super(Net, self).__init__()
+        super(RLBaseline, self).__init__()
 
         # CNN
         self.conv1 = nn.Conv2d(3, 6, 5)
@@ -176,6 +164,7 @@ class Net(nn.Module):
         self.fc3 = nn.Linear(840, max_sequence_length)
 
         # Transformer
+        # adapted from: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
         self.pos_encoder = PositionalEncoding(emsize, dropout)
         encoder_layers = TransformerEncoderLayer(emsize, nhead, nhid, dropout)
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
