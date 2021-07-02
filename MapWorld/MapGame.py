@@ -95,13 +95,14 @@ class MapWorldGym(gym.Env):
         :param action: string, one of: north, east, south, west, answer
         :return: list, contains the state, reward and signal if the game is done
         """
-
+        room_found = 0
         # map action chosen by agent (integer) to action interpretable by MapWorld
         action = self.total_available_actions[action]
         if action == 'answer':
             # TODO increase reward for finishing game substantially in comparison to step reward
             if self.current_room_name == self.target_room:
                 reward = 1000.0
+                room_found = 1
             else:
                 reward = -1000.0
             # Terminate the game
@@ -113,7 +114,7 @@ class MapWorldGym(gym.Env):
         self.model_return += reward
         self.model_steps += 1
 
-        return self.state, reward, self.done, {}   # dict is used to convey info
+        return self.state, reward, self.done, room_found
 
     def move(self, action):
         """

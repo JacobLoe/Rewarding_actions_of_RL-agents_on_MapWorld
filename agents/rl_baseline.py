@@ -8,10 +8,18 @@ from transformers import AutoTokenizer, BertModel
 from tqdm import tqdm
 
 
-# adapted from:
-# https://towardsdatascience.com/learning-reinforcement-learning-reinforce-with-pytorch-5e8ad7fc7da0
+# adapted from: https://towardsdatascience.com/learning-reinforcement-learning-reinforce-with-pytorch-5e8ad7fc7da0
 def reinforce(mwg):
+    """
+
+    Args:
+        mwg:
+
+    Returns:
+
+    """
     # TODO make model weights save-/loadable
+    # TODO add model parameters as function parameters
     available_actions = mwg.total_available_actions
     action_space = np.arange(len(available_actions))
 
@@ -29,20 +37,22 @@ def reinforce(mwg):
     dropout = 0.2  # the dropout value
     max_sequence_length = 25    # maximum length the text state of the env will get padded to
     model = RLBaseline(emsize, nhead, nhid, nlayers, dropout, max_sequence_length, len(available_actions)).to(device)
+
     # TODO maybe also use lr scheduler (adjust lr if) // Gradient clipping
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
     total_rewards = []
     total_steps = []
+    hits = []
 
     batch_rewards = []
     batch_actions = []
     batch_states_image = []
     batch_states_text = []
-    batch_counter = 2
+    batch_counter = 0
 
     num_episodes = 20
-    batch_size = 1
+    batch_size = 2
     gamma = 0.99
 
     max_steps = 10
@@ -88,7 +98,7 @@ def reinforce(mwg):
             action_probabilities = action_probabilities.cpu().detach().numpy()[0]
             action = np.random.choice(action_space, p=action_probabilities)
 
-            s_1, reward, done, _ = mwg.step(action)
+            s_1, reward, done, room_found = mwg.step(action)
 
             states_image.append(im)
             states_text.append(embedded_text)
@@ -99,6 +109,11 @@ def reinforce(mwg):
             steps += 1
 
             if done or steps >= max_steps:
+                # save the results for the episode
+                total_rewards.append(mwg.model_return)
+                total_steps.append(steps)
+                hits.append(room_found)
+
                 # when a episode is finished, collect experience
                 batch_rewards.extend(discount_rewards(
                     rewards, gamma))
@@ -106,8 +121,6 @@ def reinforce(mwg):
                 batch_states_text.extend(states_text)
                 batch_actions.extend(actions)
                 batch_counter += 1
-                total_rewards.append(mwg.model_return)
-                total_steps.append(steps)
 
                 if batch_counter == batch_size:
                     optimizer.zero_grad()
@@ -139,10 +152,19 @@ def reinforce(mwg):
                 # Print running average
                 print("\rEp: {} Average of last 100: {:.2f}".format(ep + 1, avg_rewards), end="")
 
-    return total_rewards, total_steps
+    return total_rewards, total_steps, hits
 
 
 def discount_rewards(rewards, gamma=0.99):
+    """
+
+    Args:
+        rewards:
+        gamma:
+
+    Returns:
+
+    """
     r = np.array([gamma**i * rewards[i]
         for i in range(len(rewards))])
     # Reverse the array direction for cumsum and then
@@ -163,8 +185,7 @@ class RLBaseline(nn.Module):
         self.fc2 = nn.Linear(1200, 840)
         self.fc3 = nn.Linear(840, max_sequence_length)
 
-        # Transformer
-        # adapted from: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
+        # Transformer adapted from: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
         self.pos_encoder = PositionalEncoding(emsize, dropout)
         encoder_layers = TransformerEncoderLayer(emsize, nhead, nhid, dropout)
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
@@ -207,7 +228,6 @@ class RLBaseline(nn.Module):
 
 
 class PositionalEncoding(nn.Module):
-
     def __init__(self, d_model, dropout=0.1, max_len=5000):
         super(PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)

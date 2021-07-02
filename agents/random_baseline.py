@@ -1,18 +1,30 @@
 import numpy as np
+from tqdm import tqdm
 
 
-class RandomBaseline:
-    def __init__(self):
-        pass
+def run_random_baseline(mapgame, episodes=20000):
+    """
 
-    def select_action(self, num_actions):
-        action = np.random.randint(0, num_actions)
-        return action
+    Args:
+        mapgame:
+        episodes:
+    Returns:
 
+    """
+    model_return = []
+    model_steps = []
+    hits = []
+    for _ in tqdm(range(episodes)):
 
-if __name__ == '__main__':
+        _ = mapgame.reset()
+        available_actions = mapgame.total_available_actions
+        done = False
+        while not done:
+            action = np.random.randint(0, len(available_actions))
+            _, _, done, room_found = mapgame.step(action)
 
-    rb = RandomBaseline()
+        model_return.append(mapgame.model_return)
+        model_steps.append(mapgame.model_steps)
+        hits.append(room_found)
 
-    for i in range(10):
-        print(rb.select_action(5))
+    return model_return, model_steps, hits
