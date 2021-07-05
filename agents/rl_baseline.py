@@ -40,7 +40,7 @@ def reinforce(mwg):
 
     # TODO maybe also use lr scheduler (adjust lr if) // Gradient clipping
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-
+    #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
     total_rewards = []
     total_steps = []
     hits = []
@@ -49,13 +49,15 @@ def reinforce(mwg):
     batch_actions = []
     batch_states_image = []
     batch_states_text = []
-    batch_counter = 0
+    batch_counter = 1
 
-    num_episodes = 20
-    batch_size = 2
+    num_episodes = 10000
+    batch_size = 5
     gamma = 0.99
 
-    max_steps = 10
+    max_steps = 15
+
+    asp = 0
 
     for ep in tqdm(range(num_episodes)):
 
@@ -80,9 +82,9 @@ def reinforce(mwg):
             # TODO atm only supports feeding directions because of memory constraints
             #   max sequence length of the transformer 512 token
             text = s_0[1] + ' ' + s_0[2] #text + ' ' + s_0[2]
-            print(text)
+            #print(text)
             text_tokens = tokenizer.encode_plus(text, padding='max_length', max_length=max_sequence_length, add_special_tokens=True)
-            print('text_tokens', text_tokens)
+            #print('text_tokens', text_tokens)
             text_tokens_tensor = torch.LongTensor(text_tokens['input_ids']).unsqueeze(0)
 
             bert_output = bert_embeddings(text_tokens_tensor)
@@ -94,12 +96,13 @@ def reinforce(mwg):
             action_probabilities = model(im_tensor.to(device),
                                          embedded_text_tensor.to(device),
                                          src_mask.to(device))
-            print('action probs',action_probabilities)
+            #print('action probs',action_probabilities)
             action_probabilities = action_probabilities.cpu().detach().numpy()[0]
             # bad fix to prevent the algortihm from crashing if the model outputs 'nan' as probabilities
             # in that case the episode is skipped and discarded
             if np.isnan(np.sum(action_probabilities)):
                 print('success')
+                asp += 1
                 break
             action = np.random.choice(action_space, p=action_probabilities)
 
@@ -112,7 +115,7 @@ def reinforce(mwg):
 
             s_0 = s_1
             steps += 1
-
+            #print(done, steps, max_steps, steps>=max_steps)
             if done or steps >= max_steps:
                 # save the results for the episode
                 total_rewards.append(mwg.model_return)
@@ -128,6 +131,8 @@ def reinforce(mwg):
                 batch_counter += 1
 
                 if batch_counter == batch_size:
+                    print('training')
+                    model.train()
                     optimizer.zero_grad()
 
                     # cast the batch to tensors and onto the GPU
@@ -136,7 +141,10 @@ def reinforce(mwg):
                     src_mask = model.generate_square_subsequent_mask(inputs_tensor.size(0)).to(device)
                     reward_tensor = torch.FloatTensor(batch_rewards).to(device)
                     action_tensor = torch.LongTensor(batch_actions).to(device)
+                    #print('\n')
+                    #print('src', inputs_tensor, inputs_tensor.size())
 
+                    
                     #
                     logprob = torch.log(model(im_tensor, inputs_tensor, src_mask))
                     selected_logprobs = reward_tensor * \
@@ -145,6 +153,7 @@ def reinforce(mwg):
 
                     # Calculate gradients
                     loss.backward()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
                     # Apply gradients
                     optimizer.step()
 
@@ -156,7 +165,9 @@ def reinforce(mwg):
                 avg_rewards = np.mean(total_rewards[-100:])
                 # Print running average
                 print("\rEp: {} Average of last 100: {:.2f}".format(ep + 1, avg_rewards), end="")
-
+    #if ep%10==0:
+    #    schedluer.step()
+    print('nan', asp)
     return total_rewards, total_steps, hits
 
 
@@ -200,8 +211,8 @@ class RLBaseline(nn.Module):
         # self.init_weights()
 
     def forward(self, im, src, src_mask):
-        print('src', src[0][0], src.size())
-        print('src mask',src_mask, src_mask.size())
+        #print('src', src.size())
+        #print('src mask',src_mask, src_mask.size())
         x = self.pool(F.relu(self.conv1(im)))
         x = self.pool(F.relu(self.conv2(x)))
         x = torch.flatten(x, 1)     # flatten all dimensions except batch
@@ -210,8 +221,7 @@ class RLBaseline(nn.Module):
         x = self.fc3(x)
 
         src = self.pos_encoder(src)
-        output = self.transformer_encoder(src)#, src_mask)
-        print('output',output)
+        output = self.transformer_encoder(src)# src_mask)
         output = output.mean(dim=2)
 
         # TODO rename output
