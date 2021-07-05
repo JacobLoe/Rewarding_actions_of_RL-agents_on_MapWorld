@@ -6,7 +6,7 @@ import time
 import plotly.express as px
 
 if __name__ == '__main__':
-    mwg = MapWorldGym()
+    mwg = MapWorldGym(ade_path='../../data/ADE20K_2021_17_01/images/ADE/training')
     #
     # model_return, model_steps, hits = run_random_baseline(mwg, num_iterations=5)
 

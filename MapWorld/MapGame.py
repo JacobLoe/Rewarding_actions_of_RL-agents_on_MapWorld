@@ -14,7 +14,7 @@ class MapWorldGym(gym.Env):
 
     def __init__(self, n=4, m=4, n_rooms=10, room_types=2, room_repetitions=2,
                  ade_path='../ADE20K_2021_17_01/images/ADE/training/',
-                 caption_checkpoints="./im2txt/checkpoints/im2txt_5m/model.ckpt-5000000",
+                 caption_checkpoints="./im2txt/checkpoints/im2txt_5M/model.ckpt-5000000",
                  caption_vocab='./im2txt/vocab/word_counts.txt',
                  image_resolution=(480, 854)):
         # TODO possibly kick out useless variables from init

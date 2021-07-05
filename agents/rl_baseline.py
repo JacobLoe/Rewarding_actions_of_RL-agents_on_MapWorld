@@ -80,9 +80,10 @@ def reinforce(mwg):
             # TODO atm only supports feeding directions because of memory constraints
             #   max sequence length of the transformer 512 token
             text = s_0[1] + ' ' + s_0[2] #text + ' ' + s_0[2]
-
-            text_tokens = tokenizer.encode(text, padding='max_length', max_length=max_sequence_length)
-            text_tokens_tensor = torch.LongTensor(text_tokens).unsqueeze(0)
+            print(text)
+            text_tokens = tokenizer.encode_plus(text, padding='max_length', max_length=max_sequence_length, add_special_tokens=True)
+            print('text_tokens', text_tokens)
+            text_tokens_tensor = torch.LongTensor(text_tokens['input_ids']).unsqueeze(0)
 
             bert_output = bert_embeddings(text_tokens_tensor)
             embedded_text = bert_output[0][0]
@@ -90,12 +91,16 @@ def reinforce(mwg):
 
             embedded_text_tensor = torch.LongTensor([embedded_text])
             src_mask = model.generate_square_subsequent_mask(embedded_text_tensor.size(0))
-
             action_probabilities = model(im_tensor.to(device),
                                          embedded_text_tensor.to(device),
                                          src_mask.to(device))
-
+            print('action probs',action_probabilities)
             action_probabilities = action_probabilities.cpu().detach().numpy()[0]
+            # bad fix to prevent the algortihm from crashing if the model outputs 'nan' as probabilities
+            # in that case the episode is skipped and discarded
+            if np.isnan(np.sum(action_probabilities)):
+                print('success')
+                break
             action = np.random.choice(action_space, p=action_probabilities)
 
             s_1, reward, done, room_found = mwg.step(action)
@@ -195,6 +200,8 @@ class RLBaseline(nn.Module):
         # self.init_weights()
 
     def forward(self, im, src, src_mask):
+        print('src', src[0][0], src.size())
+        print('src mask',src_mask, src_mask.size())
         x = self.pool(F.relu(self.conv1(im)))
         x = self.pool(F.relu(self.conv2(x)))
         x = torch.flatten(x, 1)     # flatten all dimensions except batch
@@ -203,12 +210,12 @@ class RLBaseline(nn.Module):
         x = self.fc3(x)
 
         src = self.pos_encoder(src)
-        output = self.transformer_encoder(src, src_mask)
+        output = self.transformer_encoder(src)#, src_mask)
+        print('output',output)
         output = output.mean(dim=2)
 
         # TODO rename output
         z = torch.cat((x, output), dim=1)
-
         z = self.fc4(z)
         z = F.softmax(z, dim=1)
         return z
