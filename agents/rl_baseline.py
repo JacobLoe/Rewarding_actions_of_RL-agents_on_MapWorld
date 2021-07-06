@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 
 # adapted from: https://towardsdatascience.com/learning-reinforcement-learning-reinforce-with-pytorch-5e8ad7fc7da0
-def reinforce(mwg):
+def reinforce(mwg, model_parameters, training_parameters):
     """
 
     Args:
@@ -19,28 +19,30 @@ def reinforce(mwg):
 
     """
     # TODO make model weights save-/loadable
-    # TODO add model parameters as function parameters
     available_actions = mwg.total_available_actions
     action_space = np.arange(len(available_actions))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
-    bert_embeddings = BertModel.from_pretrained('bert-base-uncased')
+    tokenizer = AutoTokenizer.from_pretrained(model_parameters['embedding_model'])
+    bert_embeddings = BertModel.from_pretrained(model_parameters['embedding_model'])
 
-    lr = 0.01 # learning rate
-
-    emsize = 768  # embedding size of the bert model
-    nhead = 2  # the number of heads in the multiheadattention models
-    nhid = 200  # the dimension of the feedforward network model in nn.TransformerEncoder
-    nlayers = 2  # the number of nn.TransformerEncoderLayer in nn.TransformerEncoder
-    dropout = 0.2  # the dropout value
-    max_sequence_length = 25    # maximum length the text state of the env will get padded to
+    emsize = model_parameters['embedding_size']  # embedding size of the bert model
+    nhead = model_parameters['nhead']  # the number of heads in the multiheadattention models
+    nhid = model_parameters['nhid']  # the dimension of the feedforward network model in nn.TransformerEncoder
+    nlayers = model_parameters['nlayers']  # the number of nn.TransformerEncoderLayer in nn.TransformerEncoder
+    dropout = model_parameters['dropout']  # the dropout value
+    max_sequence_length = model_parameters['max_sequence_length']    # maximum length the text state of the env will get padded to
     model = RLBaseline(emsize, nhead, nhid, nlayers, dropout, max_sequence_length, len(available_actions)).to(device)
+
+    lr = training_parameters['learning_rate'] # learning rate
+    num_episodes = training_parameters['num_episodes']
+    batch_size = training_parameters['batch_size']
+    gamma = training_parameters['gamma']
+    max_steps = training_parameters['max_steps']
 
     # TODO maybe also use lr scheduler (adjust lr if) // Gradient clipping
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-    #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
     total_rewards = []
     total_steps = []
     hits = []
@@ -51,13 +53,7 @@ def reinforce(mwg):
     batch_states_text = []
     batch_counter = 1
 
-    num_episodes = 10000
-    batch_size = 5
-    gamma = 0.99
-
-    max_steps = 15
-
-    asp = 0
+    nans = 0
 
     for ep in tqdm(range(num_episodes)):
 
@@ -82,9 +78,11 @@ def reinforce(mwg):
             # TODO atm only supports feeding directions because of memory constraints
             #   max sequence length of the transformer 512 token
             text = s_0[1] + ' ' + s_0[2] #text + ' ' + s_0[2]
-            #print(text)
-            text_tokens = tokenizer.encode_plus(text, padding='max_length', max_length=max_sequence_length, add_special_tokens=True)
-            #print('text_tokens', text_tokens)
+
+            text_tokens = tokenizer.encode_plus(text, padding='max_length',
+                                                max_length=max_sequence_length,
+                                                add_special_tokens=True)
+
             text_tokens_tensor = torch.LongTensor(text_tokens['input_ids']).unsqueeze(0)
 
             bert_output = bert_embeddings(text_tokens_tensor)
@@ -96,13 +94,12 @@ def reinforce(mwg):
             action_probabilities = model(im_tensor.to(device),
                                          embedded_text_tensor.to(device),
                                          src_mask.to(device))
-            #print('action probs',action_probabilities)
+
             action_probabilities = action_probabilities.cpu().detach().numpy()[0]
             # bad fix to prevent the algortihm from crashing if the model outputs 'nan' as probabilities
             # in that case the episode is skipped and discarded
             if np.isnan(np.sum(action_probabilities)):
-                print('success')
-                asp += 1
+                nans += 1
                 break
             action = np.random.choice(action_space, p=action_probabilities)
 
@@ -115,7 +112,6 @@ def reinforce(mwg):
 
             s_0 = s_1
             steps += 1
-            #print(done, steps, max_steps, steps>=max_steps)
             if done or steps >= max_steps:
                 # save the results for the episode
                 total_rewards.append(mwg.model_return)
@@ -131,7 +127,6 @@ def reinforce(mwg):
                 batch_counter += 1
 
                 if batch_counter == batch_size:
-                    print('training')
                     model.train()
                     optimizer.zero_grad()
 
@@ -141,11 +136,7 @@ def reinforce(mwg):
                     src_mask = model.generate_square_subsequent_mask(inputs_tensor.size(0)).to(device)
                     reward_tensor = torch.FloatTensor(batch_rewards).to(device)
                     action_tensor = torch.LongTensor(batch_actions).to(device)
-                    #print('\n')
-                    #print('src', inputs_tensor, inputs_tensor.size())
 
-                    
-                    #
                     logprob = torch.log(model(im_tensor, inputs_tensor, src_mask))
                     selected_logprobs = reward_tensor * \
                                         torch.gather(logprob, 1, action_tensor.unsqueeze(1)).squeeze()
@@ -165,9 +156,7 @@ def reinforce(mwg):
                 avg_rewards = np.mean(total_rewards[-100:])
                 # Print running average
                 print("\rEp: {} Average of last 100: {:.2f}".format(ep + 1, avg_rewards), end="")
-    #if ep%10==0:
-    #    schedluer.step()
-    print('nan', asp)
+    print('nan', nans)
     return total_rewards, total_steps, hits
 
 
