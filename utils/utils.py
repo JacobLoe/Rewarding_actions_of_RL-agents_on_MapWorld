@@ -2,10 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import json
-from datetime import date
 
 
-def save_parameters_and_results(parameters, model_return, model_steps, model_hits, base='results/raw'):
+def save_parameters_and_results(parameters, model_return, model_steps, model_hits, base_path):
     """
     Saves the results and parameters for a training run of a model,
     The files are saved under "results/raw" in a folder specific to the training run.
@@ -16,10 +15,8 @@ def save_parameters_and_results(parameters, model_return, model_steps, model_hit
         model_return: list,
         model_steps: list
         model_hits: list
-        base: string, base path where the results are saved to
+        base_path: string, base path where the results are saved to
     """
-    f = str(date.today()) + '_' + str(parameters['training']['num_episodes'])
-    base_path = os.path.join(base, f)
     if not os.path.isdir(base_path):
         os.makedirs(base_path)
 

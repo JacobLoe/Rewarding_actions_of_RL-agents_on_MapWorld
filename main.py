@@ -7,6 +7,8 @@ import json
 import os
 import plotly.express as px
 import argparse
+from datetime import date
+
 
 if __name__ == '__main__':
 
@@ -29,17 +31,22 @@ if __name__ == '__main__':
                       image_resolution=(mw_params['image_width'], mw_params['image_height']))
     # # ade_path='../../data/ADE20K_2021_17_01/images/ADE/training')
 
+    base_path = str(date.today()) + '_' + str(parameters['training']['num_episodes'])
+
     if args.model == 'random':
         model_return, model_steps, hits = run_random_baseline(mwg,
                                                               episodes=parameters['training']['num_episodes'])
     elif args.model == 'rl':
-        model_return, model_steps, model_hits = reinforce(mwg, parameters['rl_baseline'], parameters['training'])
+        model_return, model_steps, model_hits = reinforce(mwg,
+                                                          parameters['rl_baseline'],
+                                                          parameters['training'],
+                                                          base_path=base_path)
 
     model_return = [-400.0, -500.0, -600.0, -300.0, -600.0]
     model_steps = [4, 9, 15, 23, 29]
     model_hits = [0, 1, 0, 1, 1]
 
-    # save_parameters_and_results(parameters, model_return, model_steps, model_hits)
+    # save_parameters_and_results(parameters, model_return, model_steps, model_hits, base_path)
 
 
     # model_steps = np.cumsum(model_steps)
