@@ -41,6 +41,7 @@ if __name__ == '__main__':
 
     # save_parameters_and_results(parameters, model_return, model_steps, model_hits)
 
+
     # model_steps = np.cumsum(model_steps)
     print('\n-------------------')
     # print('Return per model run: ', model_return)
