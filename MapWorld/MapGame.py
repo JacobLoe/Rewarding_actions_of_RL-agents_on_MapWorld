@@ -146,7 +146,9 @@ class MapWorldGym(gym.Env):
         :param image_path:
         :return: the captions and the name/category of the target room as a string
         """
+        #
         target_room = path.relpath(image_path, self.ade_path)
+        #
         question = self.image_caption_model.image(image_path)['1']['Sentence']
         # capitalize first letter, remove trailing space and stop, add stop at proper place
         question = question.capitalize().strip('.').strip() + '.'
@@ -161,6 +163,7 @@ class MapWorldGym(gym.Env):
 
         Returns: Numpy array, reshaped image, height, width, channels,
         """
+        # TODO make resizing dependent on aspect ratio of source to prevent distortions
         image = cv2.imread(image_path)
         image = cv2.resize(image, image_resolution)
         image = np.array(image)

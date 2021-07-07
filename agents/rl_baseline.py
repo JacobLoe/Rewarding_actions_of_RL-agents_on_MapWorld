@@ -6,6 +6,7 @@ from torch.nn import TransformerEncoder, TransformerEncoderLayer
 import math
 from transformers import AutoTokenizer, BertModel
 from tqdm import tqdm
+import os
 
 
 # adapted from: https://towardsdatascience.com/learning-reinforcement-learning-reinforce-with-pytorch-5e8ad7fc7da0
@@ -18,6 +19,7 @@ def reinforce(mwg, model_parameters, training_parameters):
     Returns:
 
     """
+    # TODO include flag to turn on/off training, so model doesn't train on eval data
     # TODO make model weights save-/loadable
     # TODO save checkpoints at regular intervals
     available_actions = mwg.total_available_actions
@@ -25,8 +27,10 @@ def reinforce(mwg, model_parameters, training_parameters):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    tokenizer = AutoTokenizer.from_pretrained(model_parameters['embedding_model'])
-    bert_embeddings = BertModel.from_pretrained(model_parameters['embedding_model'])
+    # tokenizer = AutoTokenizer.from_pretrained(model_parameters['embedding_model'])
+    # # TODO use a model which produces embeddings <786
+    # # TODO get size of the embeddings directly from the model
+    # bert_embeddings = BertModel.from_pretrained(model_parameters['embedding_model'])
 
     emsize = model_parameters['embedding_size']  # embedding size of the bert model
     nhead = model_parameters['nhead']  # the number of heads in the multiheadattention models
@@ -36,14 +40,34 @@ def reinforce(mwg, model_parameters, training_parameters):
     max_sequence_length = model_parameters['max_sequence_length']    # maximum length the text state of the env will get padded to
     model = RLBaseline(emsize, nhead, nhid, nlayers, dropout, max_sequence_length, len(available_actions)).to(device)
 
-    lr = training_parameters['learning_rate'] # learning rate
+    lr = training_parameters['learning_rate']
     num_episodes = training_parameters['num_episodes']
     batch_size = training_parameters['batch_size']
     gamma = training_parameters['gamma']
     max_steps = training_parameters['max_steps']
+    starting_episode = 0
 
+    # TODO look into different loss functions
     # TODO maybe also use lr scheduler (adjust lr if) // Gradient clipping
+    # TODO record loss function in parameters ?
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+
+    episode = 5
+    ck_path = 'results/checkpoint.pt'
+
+    # torch.save({
+    #     'current_episode': episode,
+    #     'model_state_dict': model.state_dict(),
+    #     'optimizer_state_dict': optimizer.state_dict(),
+    # }, ck_path)
+
+    if os.path.isdir(ck_path):
+        # if a checkpoint for the model already exist resume from there
+        checkpoint = torch.load(ck_path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        starting_episode = checkpoint['current_episode']
+
     total_rewards = []
     total_steps = []
     hits = []
@@ -56,107 +80,108 @@ def reinforce(mwg, model_parameters, training_parameters):
 
     nans = 0
 
-    for ep in tqdm(range(num_episodes)):
-
-        s_0 = mwg.reset()
-        text = s_0[1]
-
-        states_image = []
-        states_text = []
-        rewards = []
-        actions = []
-
-        done = False
-        steps = 0
-        # loop until an episode is finished or 30 steps have been done
-        # 30 steps is worse than a agent with random actions
-        while not done and steps < max_steps:
-            # preprocess state (image and text)
-            im = s_0[0]
-            im = np.reshape(im, (np.shape(im)[2], np.shape(im)[1], np.shape(im)[0]))
-            im_tensor = torch.FloatTensor([im])
-
-            # TODO atm only supports feeding directions because of memory constraints
-            #   max sequence length of the transformer 512 token
-            text = s_0[1] + ' ' + s_0[2] #text + ' ' + s_0[2]
-
-            text_tokens = tokenizer.encode_plus(text, padding='max_length',
-                                                max_length=max_sequence_length,
-                                                add_special_tokens=True)
-
-            text_tokens_tensor = torch.LongTensor(text_tokens['input_ids']).unsqueeze(0)
-
-            bert_output = bert_embeddings(text_tokens_tensor)
-            embedded_text = bert_output[0][0]
-            embedded_text = embedded_text.cpu().detach().numpy()
-
-            embedded_text_tensor = torch.LongTensor([embedded_text])
-            src_mask = model.generate_square_subsequent_mask(embedded_text_tensor.size(0))
-            action_probabilities = model(im_tensor.to(device),
-                                         embedded_text_tensor.to(device),
-                                         src_mask.to(device))
-
-            action_probabilities = action_probabilities.cpu().detach().numpy()[0]
-            # bad fix to prevent the algortihm from crashing if the model outputs 'nan' as probabilities
-            # in that case the episode is skipped and discarded
-            if np.isnan(np.sum(action_probabilities)):
-                nans += 1
-                break
-            action = np.random.choice(action_space, p=action_probabilities)
-
-            s_1, reward, done, room_found = mwg.step(action)
-
-            states_image.append(im)
-            states_text.append(embedded_text)
-            rewards.append(reward)
-            actions.append(action)
-
-            s_0 = s_1
-            steps += 1
-            if done or steps >= max_steps:
-                # save the results for the episode
-                total_rewards.append(mwg.model_return)
-                total_steps.append(steps)
-                hits.append(room_found)
-
-                # when a episode is finished, collect experience
-                batch_rewards.extend(discount_rewards(
-                    rewards, gamma))
-                batch_states_image.extend(states_image)
-                batch_states_text.extend(states_text)
-                batch_actions.extend(actions)
-                batch_counter += 1
-
-                if batch_counter == batch_size:
-                    model.train()
-                    optimizer.zero_grad()
-
-                    # cast the batch to tensors and onto the GPU
-                    im_tensor = torch.FloatTensor(batch_states_image).to(device)
-                    inputs_tensor = torch.LongTensor(batch_states_text).to(device)
-                    src_mask = model.generate_square_subsequent_mask(inputs_tensor.size(0)).to(device)
-                    reward_tensor = torch.FloatTensor(batch_rewards).to(device)
-                    action_tensor = torch.LongTensor(batch_actions).to(device)
-
-                    logprob = torch.log(model(im_tensor, inputs_tensor, src_mask))
-                    selected_logprobs = reward_tensor * \
-                                        torch.gather(logprob, 1, action_tensor.unsqueeze(1)).squeeze()
-                    loss = -selected_logprobs.mean()
-
-                    # Calculate gradients
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
-                    # Apply gradients
-                    optimizer.step()
-
-                    batch_rewards = []
-                    batch_actions = []
-                    batch_states_image = []
-                    batch_states_text = []
-                    batch_counter = 1
-                avg_rewards = np.mean(total_rewards[-100:])
-                # Print running average
-                print("\rEp: {} Average of last 100: {:.2f}".format(ep + 1, avg_rewards), end="")
+    # for episode in tqdm(range(starting_episode, num_episodes)):
+    #
+    #     s_0 = mwg.reset()
+    #     text = s_0[1]
+    #
+    #     states_image = []
+    #     states_text = []
+    #     rewards = []
+    #     actions = []
+    #
+    #     done = False
+    #     steps = 0
+    #     # loop until an episode is finished or 30 steps have been done
+    #     # 30 steps is worse than a agent with random actions
+    #     while not done and steps < max_steps:
+    #         # preprocess state (image and text)
+    #         im = s_0[0]
+    #         im = np.reshape(im, (np.shape(im)[2], np.shape(im)[1], np.shape(im)[0]))
+    #         im_tensor = torch.FloatTensor([im])
+    #
+    #         # TODO atm only supports feeding directions because of memory constraints
+    #         #   max sequence length of the transformer 512 token
+    #         text = s_0[1] + ' ' + s_0[2] #text + ' ' + s_0[2]
+    #
+    #         text_tokens = tokenizer.encode_plus(text, padding='max_length',
+    #                                             max_length=max_sequence_length,
+    #                                             add_special_tokens=True)
+    #
+    #         text_tokens_tensor = torch.LongTensor(text_tokens['input_ids']).unsqueeze(0)
+    #
+    #         bert_output = bert_embeddings(text_tokens_tensor)
+    #         embedded_text = bert_output[0][0]
+    #         embedded_text = embedded_text.cpu().detach().numpy()
+    #
+    #         embedded_text_tensor = torch.LongTensor([embedded_text])
+    #         src_mask = model.generate_square_subsequent_mask(embedded_text_tensor.size(0))
+    #         action_probabilities = model(im_tensor.to(device),
+    #                                      embedded_text_tensor.to(device),
+    #                                      src_mask.to(device))
+    #
+    #         action_probabilities = action_probabilities.cpu().detach().numpy()[0]
+    #         # bad fix to prevent the algortihm from crashing if the model outputs 'nan' as probabilities
+    #         # in that case the episode is skipped and discarded
+    #         if np.isnan(np.sum(action_probabilities)):
+    #             nans += 1
+    #             break
+    #         action = np.random.choice(action_space, p=action_probabilities)
+    #
+    #         s_1, reward, done, room_found = mwg.step(action)
+    #
+    #         states_image.append(im)
+    #         states_text.append(embedded_text)
+    #         rewards.append(reward)
+    #         actions.append(action)
+    #
+    #         s_0 = s_1
+    #         steps += 1
+    #         if done or steps >= max_steps:
+    #             # save the results for the episode
+    #             total_rewards.append(mwg.model_return)
+    #             total_steps.append(steps)
+    #             hits.append(room_found)
+    #
+    #             # when a episode is finished, collect experience
+    #             batch_rewards.extend(discount_rewards(
+    #                 rewards, gamma))
+    #             batch_states_image.extend(states_image)
+    #             batch_states_text.extend(states_text)
+    #             batch_actions.extend(actions)
+    #             batch_counter += 1
+    #
+    #             if batch_counter == batch_size:
+    #                 print('training')
+    #                 model.train()
+    #                 optimizer.zero_grad()
+    #
+    #                 # cast the batch to tensors and onto the GPU
+    #                 im_tensor = torch.FloatTensor(batch_states_image).to(device)
+    #                 inputs_tensor = torch.LongTensor(batch_states_text).to(device)
+    #                 src_mask = model.generate_square_subsequent_mask(inputs_tensor.size(0)).to(device)
+    #                 reward_tensor = torch.FloatTensor(batch_rewards).to(device)
+    #                 action_tensor = torch.LongTensor(batch_actions).to(device)
+    #
+    #                 logprob = torch.log(model(im_tensor, inputs_tensor, src_mask))
+    #                 selected_logprobs = reward_tensor * \
+    #                                     torch.gather(logprob, 1, action_tensor.unsqueeze(1)).squeeze()
+    #                 loss = -selected_logprobs.mean()
+    #
+    #                 # Calculate gradients
+    #                 loss.backward()
+    #                 torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+    #                 # Apply gradients
+    #                 optimizer.step()
+    #
+    #                 batch_rewards = []
+    #                 batch_actions = []
+    #                 batch_states_image = []
+    #                 batch_states_text = []
+    #                 batch_counter = 1
+    #             avg_rewards = np.mean(total_rewards[-100:])
+    #             # Print running average
+    #             print("\rEp: {} Average of last 100: {:.2f}".format(ep + 1, avg_rewards), end="")
     print('nan', nans)
     return total_rewards, total_steps, hits
 
@@ -183,6 +208,7 @@ class RLBaseline(nn.Module):
     def __init__(self, emsize, nhead, nhid, nlayers, dropout, max_sequence_length, output_size):
         super(RLBaseline, self).__init__()
 
+        # TODO look into padding of input image
         # CNN
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
@@ -220,6 +246,7 @@ class RLBaseline(nn.Module):
         z = F.softmax(z, dim=1)
         return z
 
+    # TODO delete this
     def generate_square_subsequent_mask(self, sz):
         mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
         mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
