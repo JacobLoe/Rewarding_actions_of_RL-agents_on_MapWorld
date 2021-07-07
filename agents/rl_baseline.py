@@ -19,6 +19,7 @@ def reinforce(mwg, model_parameters, training_parameters):
 
     """
     # TODO make model weights save-/loadable
+    # TODO save checkpoints at regular intervals
     available_actions = mwg.total_available_actions
     action_space = np.arange(len(available_actions))
 

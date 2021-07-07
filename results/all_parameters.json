@@ -1,0 +1,30 @@
+{
+    "MapWorld": {
+        "ade_path": "../ADE20K_2021_17_01/images/ADE/training/",
+        "caption_checkpoints": "./im2txt/checkpoints/im2txt_5M/model.ckpt-5000000",
+        "caption_vocab": "./im2txt/vocab/word_counts.txt",
+        "image_height": 854,
+        "image_width": 480,
+        "m": 4,
+        "n": 4,
+        "n_rooms": 10,
+        "room_repetitions": 2,
+        "room_types": 2
+    },
+    "rl_baseline": {
+        "dropout": 0.2,
+        "embedding_model": "bert-base-uncased",
+        "embedding_size": 768,
+        "max_sequence_length": 25,
+        "nhead": 2,
+        "nhid": 200,
+        "nlayers": 2
+    },
+    "training": {
+        "batch_size": 5,
+        "gamma": 0.99,
+        "learning_rate": 0.01,
+        "max_steps": 15,
+        "num_episodes": 1000
+    }
+}
