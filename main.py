@@ -1,6 +1,6 @@
 from agents import run_random_baseline, reinforce
 from MapWorld import MapWorldGym
-from utils import save_parameters_and_results
+from utils import save_parameters, save_results
 import numpy as np
 import time
 import json
@@ -13,11 +13,13 @@ from datetime import date
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", choices=['random', 'rl'], help="")
+    parser.add_argument("model", choices=['random', 'rl', 'test'], help="")
+    parser.add_argument("--base_path", help="")
     parser.add_argument("--save", help="True")
+    parser.add_argument("--parameters", default='all_parameters.json', help="")
     args = parser.parse_args()
 
-    with open('results/all_parameters.json', 'r') as fp:
+    with open(args.parameters, 'r') as fp:
         parameters = json.load(fp)
 
     #
@@ -31,23 +33,27 @@ if __name__ == '__main__':
                       image_resolution=(mw_params['image_width'], mw_params['image_height']))
     # # ade_path='../../data/ADE20K_2021_17_01/images/ADE/training')
 
-    base_path = str(date.today()) + '_' + str(parameters['training']['num_episodes'])
-
     if args.model == 'random':
-        model_return, model_steps, hits = run_random_baseline(mwg,
-                                                              episodes=parameters['training']['num_episodes'])
+        model_return, model_steps, model_hits = run_random_baseline(mwg,
+                                                                    episodes=parameters['training']['num_episodes'])
+        save_results(model_return, model_steps, model_hits, args.base_path)
+
     elif args.model == 'rl':
+        # save parameters before running the model
+        parameters = {'rl_baseline': parameters['rl_baseline'],
+                      'training': parameters['training'],
+                      'MapWorld': mw_params}
+        save_parameters(parameters, args.base_path)
         model_return, model_steps, model_hits = reinforce(mwg,
                                                           parameters['rl_baseline'],
                                                           parameters['training'],
-                                                          base_path=base_path)
+                                                          base_path=args.base_path)
+        save_results(model_return, model_steps, model_hits, args.base_path)
 
-    model_return = [-400.0, -500.0, -600.0, -300.0, -600.0]
-    model_steps = [4, 9, 15, 23, 29]
-    model_hits = [0, 1, 0, 1, 1]
-
-    # save_parameters_and_results(parameters, model_return, model_steps, model_hits, base_path)
-
+    elif args.model == 'test':
+        model_return = [-400.0, -500.0, -600.0, -300.0, -600.0]
+        model_steps = [4, 9, 15, 23, 29]
+        model_hits = [0, 1, 0, 1, 1]
 
     # model_steps = np.cumsum(model_steps)
     print('\n-------------------')

@@ -4,17 +4,31 @@ import os
 import json
 
 
-def save_parameters_and_results(parameters, model_return, model_steps, model_hits, base_path):
+def save_results(model_return, model_steps, model_hits, base_path):
     """
-    Saves the results and parameters for a training run of a model,
-    The files are saved under "results/raw" in a folder specific to the training run.
-    The folder is named "YYYY-MM-DD_NUM_EPISODES'
-    Results are saved as numpy files, parameters as json.
+    Saves the results for a training run of a model,
+    Results are saved as numpy files.
     Args:
-        parameters: dict,
+
         model_return: list,
         model_steps: list
         model_hits: list
+        base_path: string, base path where the results are saved to
+    """
+    if not os.path.isdir(base_path):
+        os.makedirs(base_path)
+
+    np.save(os.path.join(base_path, 'model_steps'), model_steps)
+    np.save(os.path.join(base_path, 'model_return'), model_return)
+    np.save(os.path.join(base_path, 'model_hits'), model_hits)
+
+
+def save_parameters(parameters, base_path):
+    """
+    Saves the parameters for a training run of a model,
+    Parameters are saved as a json file.
+    Args:
+        parameters: dict,
         base_path: string, base path where the results are saved to
     """
     if not os.path.isdir(base_path):
@@ -24,10 +38,6 @@ def save_parameters_and_results(parameters, model_return, model_steps, model_hit
 
     with open(json_path, 'w') as fp:
         json.dump(parameters, fp, sort_keys=True, indent=4)
-
-    np.save(os.path.join(base_path, 'model_steps'), model_steps)
-    np.save(os.path.join(base_path, 'model_return'), model_return)
-    np.save(os.path.join(base_path, 'model_hits'), model_hits)
 
 
 def create_histograms(total_return, steps):
