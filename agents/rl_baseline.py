@@ -6,6 +6,7 @@ from torch.nn import TransformerEncoder, TransformerEncoderLayer
 import math
 from transformers import AutoTokenizer, BertModel
 from tqdm import tqdm
+from sentence_transformers import SentenceTransformer
 import os
 
 
@@ -30,11 +31,6 @@ def reinforce(mwg, model_parameters, training_parameters, base_path):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    tokenizer = AutoTokenizer.from_pretrained(model_parameters['embedding_model'])
-    # # TODO use a model which produces embeddings <786
-    # # TODO get size of the embeddings directly from the model
-    bert_embeddings = BertModel.from_pretrained(model_parameters['embedding_model'])
-
     emsize = model_parameters['embedding_size']  # embedding size of the bert model
     nhead = model_parameters['nhead']  # the number of heads in the multiheadattention models
     nhid = model_parameters['nhid']  # the dimension of the feedforward network model in nn.TransformerEncoder
@@ -56,16 +52,18 @@ def reinforce(mwg, model_parameters, training_parameters, base_path):
     # TODO record loss function in parameters ?
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
+    em_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+
     ck_path = os.path.join(base_path, 'checkpoint.pt')
 
-    if os.path.isdir(ck_path):
-        # if a checkpoint for the model already exist resume from there
-        checkpoint = torch.load(ck_path)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        starting_episode = checkpoint['current_episode']
-    if not os.path.isdir(base_path):
-        os.makedirs(base_path)
+    # if os.path.isdir(ck_path):
+    #     # if a checkpoint for the model already exist resume from there
+    #     checkpoint = torch.load(ck_path)
+    #     model.load_state_dict(checkpoint['model_state_dict'])
+    #     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    #     starting_episode = checkpoint['current_episode']
+    # if not os.path.isdir(base_path):
+    #     os.makedirs(base_path)
 
     total_rewards = []
     total_steps = []
@@ -97,30 +95,20 @@ def reinforce(mwg, model_parameters, training_parameters, base_path):
             # preprocess state (image and text)
             im = s_0[0]
             im = np.reshape(im, (np.shape(im)[2], np.shape(im)[1], np.shape(im)[0]))
-            im_tensor = torch.FloatTensor([im])
+            im_tensor = torch.FloatTensor([im]).to(device)
 
             # TODO atm only supports feeding directions because of memory constraints
             #   max sequence length of the transformer 512 token
             text = s_0[1] + ' ' + s_0[2] #text + ' ' + s_0[2]
 
-            text_tokens = tokenizer.encode_plus(text, padding='max_length',
-                                                max_length=max_sequence_length,
-                                                add_special_tokens=True)
+            embeddings = em_model.encode(text)
 
-            text_tokens_tensor = torch.LongTensor(text_tokens['input_ids']).unsqueeze(0)
-
-            bert_output = bert_embeddings(text_tokens_tensor)
-            embedded_text = bert_output[0][0]
-            embedded_text = embedded_text.cpu().detach().numpy()
-
-            embedded_text_tensor = torch.LongTensor([embedded_text])
-            src_mask = model.generate_square_subsequent_mask(embedded_text_tensor.size(0))
-            action_probabilities = model(im_tensor.to(device),
-                                         embedded_text_tensor.to(device),
-                                         src_mask.to(device))
+            embedded_text_tensor = torch.LongTensor([embeddings]).to(device)
+            action_probabilities = model(im_tensor,
+                                         embedded_text_tensor)
 
             action_probabilities = action_probabilities.cpu().detach().numpy()[0]
-            # bad fix to prevent the algortihm from crashing if the model outputs 'nan' as probabilities
+            # bad fix to prevent the algorithm from crashing if the model outputs 'nan' as probabilities
             # in that case the episode is skipped and discarded
             if np.isnan(np.sum(action_probabilities)):
                 nans += 1
@@ -130,7 +118,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path):
             s_1, reward, done, room_found = mwg.step(action)
 
             states_image.append(im)
-            states_text.append(embedded_text)
+            states_text.append(embeddings)
             rewards.append(reward)
             actions.append(action)
 
@@ -158,14 +146,15 @@ def reinforce(mwg, model_parameters, training_parameters, base_path):
                     # cast the batch to tensors and onto the GPU
                     im_tensor = torch.FloatTensor(batch_states_image).to(device)
                     inputs_tensor = torch.LongTensor(batch_states_text).to(device)
-                    src_mask = model.generate_square_subsequent_mask(inputs_tensor.size(0)).to(device)
                     reward_tensor = torch.FloatTensor(batch_rewards).to(device)
                     action_tensor = torch.LongTensor(batch_actions).to(device)
 
-                    logprob = torch.log(model(im_tensor, inputs_tensor, src_mask))
+                    logprob = torch.log(model(im_tensor, inputs_tensor))
                     selected_logprobs = reward_tensor * \
                                         torch.gather(logprob, 1, action_tensor.unsqueeze(1)).squeeze()
                     loss = -selected_logprobs.mean()
+
+                    print(type(loss), loss)
 
                     # Calculate gradients
                     loss.backward()
@@ -182,13 +171,13 @@ def reinforce(mwg, model_parameters, training_parameters, base_path):
                 # Print running average
                 print("\rEp: {} Average of last 100: {:.2f}".format(episode + 1, avg_rewards), end="")
 
-        # save the progress of the training every checkpoint_frequency episodes
-        if episode%checkpoint_frequency == 0:
-            torch.save({
-                'current_episode': episode,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-            }, ck_path)
+        # # save the progress of the training every checkpoint_frequency episodes
+        # if episode%checkpoint_frequency == 0:
+        #     torch.save({
+        #         'current_episode': episode,
+        #         'model_state_dict': model.state_dict(),
+        #         'optimizer_state_dict': optimizer.state_dict(),
+        #     }, ck_path)
 
     print('nan', nans)
     return total_rewards, total_steps, hits
@@ -221,10 +210,10 @@ class RLBaseline(nn.Module):
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(393120, 1200)   # layer size is result of image res (480x854) after conv + pool
-        self.fc2 = nn.Linear(1200, 840)
-        self.fc3 = nn.Linear(840, max_sequence_length)
-
+        self.fc1 = nn.Linear(121104, 1200)   # layer size is result of image res (480x854) after conv + pool
+        self.fc2 = nn.Linear(1200, max_sequence_length)
+        emsize = 384
+        self.emsize = emsize
         # Transformer adapted from: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
         self.pos_encoder = PositionalEncoding(emsize, dropout)
         encoder_layers = TransformerEncoderLayer(emsize, nhead, nhid, dropout)
@@ -234,31 +223,29 @@ class RLBaseline(nn.Module):
 
         # self.init_weights()
 
-    def forward(self, im, src, src_mask):
-        #print('src', src.size())
-        #print('src mask',src_mask, src_mask.size())
+    def forward(self, im, src):
         x = self.pool(F.relu(self.conv1(im)))
         x = self.pool(F.relu(self.conv2(x)))
         x = torch.flatten(x, 1)     # flatten all dimensions except batch
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        x = self.fc3(x)
 
+        print('src', src.size())
         src = self.pos_encoder(src)
-        output = self.transformer_encoder(src)# src_mask)
-        output = output.mean(dim=2)
+        print('src', src.size())
 
+        output = self.transformer_encoder(src)
+        print('output bf reshape: ', output.size())
+        output = output.mean(dim=2)
+        print('output after reshape: ', output.size())
+        print('x', x.size())
         # TODO rename output
         z = torch.cat((x, output), dim=1)
+        print('cat', z.size())
         z = self.fc4(z)
+        print('fc', z.size())
         z = F.softmax(z, dim=1)
         return z
-
-    # TODO delete this
-    def generate_square_subsequent_mask(self, sz):
-        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
-        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
-        return mask
 
     def init_weights(self):
         # TODO add init for cnn

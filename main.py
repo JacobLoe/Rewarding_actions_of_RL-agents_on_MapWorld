@@ -14,8 +14,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("model", choices=['random', 'rl', 'test'], help="")
-    parser.add_argument("--base_path", help="")
-    parser.add_argument("--save", help="True")
+    parser.add_argument("--base_path", default="", help="")
+    parser.add_argument("--save", default="True", help="")
     parser.add_argument("--parameters", default='all_parameters.json', help="")
     args = parser.parse_args()
 
@@ -43,7 +43,7 @@ if __name__ == '__main__':
         parameters = {'rl_baseline': parameters['rl_baseline'],
                       'training': parameters['training'],
                       'MapWorld': mw_params}
-        save_parameters(parameters, args.base_path)
+        # save_parameters(parameters, args.base_path)
         model_return, model_steps, model_hits = reinforce(mwg,
                                                           parameters['rl_baseline'],
                                                           parameters['training'],
