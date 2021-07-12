@@ -24,20 +24,14 @@ def reinforce(mwg, model_parameters, training_parameters, base_path):
 
     """
     # TODO include flag to turn on/off training, so model doesn't train on eval data
-    # TODO make model weights save-/loadable
-    # TODO save checkpoints at regular intervals
     available_actions = mwg.total_available_actions
     action_space = np.arange(len(available_actions))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     emsize = model_parameters['embedding_size']  # embedding size of the bert model
-    nhead = model_parameters['nhead']  # the number of heads in the multiheadattention models
-    nhid = model_parameters['nhid']  # the dimension of the feedforward network model in nn.TransformerEncoder
-    nlayers = model_parameters['nlayers']  # the number of nn.TransformerEncoderLayers in nn.TransformerEncoder
-    dropout = model_parameters['dropout']  # the dropout value
     max_sequence_length = model_parameters['max_sequence_length']    # maximum length the text state of the env will get padded to
-    model = RLBaseline(emsize, nhead, nhid, nlayers, dropout, max_sequence_length, len(available_actions)).to(device)
+    model = RLBaseline(emsize, max_sequence_length, len(available_actions)).to(device)
 
     lr = training_parameters['learning_rate']
     num_episodes = training_parameters['num_episodes']
@@ -52,18 +46,19 @@ def reinforce(mwg, model_parameters, training_parameters, base_path):
     # TODO record loss function in parameters ?
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
+    # TODO look into what the model was trained on. How does it deal with multiple sentences ?
     em_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
 
     ck_path = os.path.join(base_path, 'checkpoint.pt')
 
-    # if os.path.isdir(ck_path):
-    #     # if a checkpoint for the model already exist resume from there
-    #     checkpoint = torch.load(ck_path)
-    #     model.load_state_dict(checkpoint['model_state_dict'])
-    #     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    #     starting_episode = checkpoint['current_episode']
-    # if not os.path.isdir(base_path):
-    #     os.makedirs(base_path)
+    if os.path.isdir(ck_path):
+        # if a checkpoint for the model already exist resume from there
+        checkpoint = torch.load(ck_path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        starting_episode = checkpoint['current_episode']
+    if not os.path.isdir(base_path):
+        os.makedirs(base_path)
 
     total_rewards = []
     total_steps = []
@@ -73,9 +68,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path):
     batch_actions = []
     batch_states_image = []
     batch_states_text = []
-    batch_counter = 1
-
-    nans = 0
+    batch_counter = 0
 
     for episode in tqdm(range(starting_episode, num_episodes)):
 
@@ -103,16 +96,11 @@ def reinforce(mwg, model_parameters, training_parameters, base_path):
 
             embeddings = em_model.encode(text)
 
-            embedded_text_tensor = torch.LongTensor([embeddings]).to(device)
+            embedded_text_tensor = torch.FloatTensor([embeddings]).to(device)
             action_probabilities = model(im_tensor,
                                          embedded_text_tensor)
 
             action_probabilities = action_probabilities.cpu().detach().numpy()[0]
-            # bad fix to prevent the algorithm from crashing if the model outputs 'nan' as probabilities
-            # in that case the episode is skipped and discarded
-            if np.isnan(np.sum(action_probabilities)):
-                nans += 1
-                break
             action = np.random.choice(action_space, p=action_probabilities)
 
             s_1, reward, done, room_found = mwg.step(action)
@@ -145,7 +133,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path):
 
                     # cast the batch to tensors and onto the GPU
                     im_tensor = torch.FloatTensor(batch_states_image).to(device)
-                    inputs_tensor = torch.LongTensor(batch_states_text).to(device)
+                    inputs_tensor = torch.FloatTensor(batch_states_text).to(device)
                     reward_tensor = torch.FloatTensor(batch_rewards).to(device)
                     action_tensor = torch.LongTensor(batch_actions).to(device)
 
@@ -153,8 +141,6 @@ def reinforce(mwg, model_parameters, training_parameters, base_path):
                     selected_logprobs = reward_tensor * \
                                         torch.gather(logprob, 1, action_tensor.unsqueeze(1)).squeeze()
                     loss = -selected_logprobs.mean()
-
-                    print(type(loss), loss)
 
                     # Calculate gradients
                     loss.backward()
@@ -167,19 +153,15 @@ def reinforce(mwg, model_parameters, training_parameters, base_path):
                     batch_states_image = []
                     batch_states_text = []
                     batch_counter = 1
-                avg_rewards = np.mean(total_rewards[-100:])
-                # Print running average
-                print("\rEp: {} Average of last 100: {:.2f}".format(episode + 1, avg_rewards), end="")
 
-        # # save the progress of the training every checkpoint_frequency episodes
-        # if episode%checkpoint_frequency == 0:
-        #     torch.save({
-        #         'current_episode': episode,
-        #         'model_state_dict': model.state_dict(),
-        #         'optimizer_state_dict': optimizer.state_dict(),
-        #     }, ck_path)
+        # save the progress of the training every checkpoint_frequency episodes
+        if episode%checkpoint_frequency == 0:
+            torch.save({
+                'current_episode': episode,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+            }, ck_path)
 
-    print('nan', nans)
     return total_rewards, total_steps, hits
 
 
@@ -202,24 +184,25 @@ def discount_rewards(rewards, gamma=0.99):
 
 
 class RLBaseline(nn.Module):
-    def __init__(self, emsize, nhead, nhid, nlayers, dropout, max_sequence_length, output_size):
+    def __init__(self, emsize, max_sequence_length, output_size):
         super(RLBaseline, self).__init__()
 
+        # TODO rename fc-layer to something useful
         # TODO look into padding of input image
         # CNN
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
         self.fc1 = nn.Linear(121104, 1200)   # layer size is result of image res (480x854) after conv + pool
+        # TODO with the sentence transformer max_sequence_length is not a thing anymore
+        # TODO maybe replace it with something else (emsize, etc)
+        # TODO use tanh for both last fc like in https://arxiv.org/pdf/1902.07742.pdf
         self.fc2 = nn.Linear(1200, max_sequence_length)
-        emsize = 384
-        self.emsize = emsize
-        # Transformer adapted from: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
-        self.pos_encoder = PositionalEncoding(emsize, dropout)
-        encoder_layers = TransformerEncoderLayer(emsize, nhead, nhid, dropout)
-        self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
 
-        self.fc4 = nn.Linear(2*max_sequence_length, output_size)
+        # text processing
+        self.fc4 = nn.Linear(emsize, max_sequence_length)
+
+        self.fc5 = nn.Linear(2*max_sequence_length, output_size)
 
         # self.init_weights()
 
@@ -230,20 +213,13 @@ class RLBaseline(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
 
-        print('src', src.size())
-        src = self.pos_encoder(src)
-        print('src', src.size())
-
-        output = self.transformer_encoder(src)
-        print('output bf reshape: ', output.size())
-        output = output.mean(dim=2)
-        print('output after reshape: ', output.size())
-        print('x', x.size())
         # TODO rename output
+        output = self.fc4(src)
+
+        # TODO use matmul instead of cat
+        # z = torch.matmul(x, output)
         z = torch.cat((x, output), dim=1)
-        print('cat', z.size())
-        z = self.fc4(z)
-        print('fc', z.size())
+        z = self.fc5(z)
         z = F.softmax(z, dim=1)
         return z
 
@@ -254,21 +230,3 @@ class RLBaseline(nn.Module):
         # self.encoder.weight.data.uniform_(-initrange, initrange)
         # self.decoder.bias.data.zero_()
         # self.decoder.weight.data.uniform_(-initrange, initrange)
-
-
-class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, dropout=0.1, max_len=5000):
-        super(PositionalEncoding, self).__init__()
-        self.dropout = nn.Dropout(p=dropout)
-
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0).transpose(0, 1)
-        self.register_buffer('pe', pe)
-
-    def forward(self, x):
-        x = x + self.pe[:x.size(0), :]
-        return self.dropout(x)

@@ -12,20 +12,16 @@
         "room_types": 2
     },
     "rl_baseline": {
-        "dropout": 0.2,
         "embedding_model": "bert-base-uncased",
-        "embedding_size": 768,
-        "max_sequence_length": 25,
-        "nhead": 2,
-        "nhid": 200,
-        "nlayers": 2
+        "embedding_size": 384,
+        "max_sequence_length": 25
     },
     "training": {
         "batch_size": 5,
         "gamma": 0.99,
         "learning_rate": 0.01,
         "max_steps": 15,
-        "num_episodes": 1000,
+        "num_episodes": 25,
         "checkpoint_frequency": 20
     }
 }
