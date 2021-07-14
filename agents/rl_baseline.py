@@ -216,7 +216,6 @@ class RLBaseline(nn.Module):
         # TODO rename output
         output = self.fc4(src)
 
-        # TODO use matmul instead of cat
         z = torch.mul(x, output)
         z = self.fc5(z)
         z = F.softmax(z, dim=1)
