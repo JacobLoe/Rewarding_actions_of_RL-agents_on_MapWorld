@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import json
+import plotly.express as px
 
 
 def save_results(model_return, model_steps, model_hits, base_path):
@@ -62,3 +63,16 @@ def create_histograms(total_return, steps):
     axs[1].set_ylabel('Count')
     axs[1].set_xlabel('Total steps')
     plt.show()
+
+
+def create_figure(model_steps, model_return, model_name, base_path):
+    title = 'Return of {} over {} episodes'.format(model_name, len(model_return))
+    x_axis_label = 'Steps'
+    y_axis_label = 'Return'
+    fig = px.line(x=np.cumsum(model_steps),
+                  y=model_return,
+                  title=title,
+                  )
+    fig.update_xaxes(title_text=x_axis_label)
+    fig.update_yaxes(title_text=y_axis_label)
+    fig.write_image(os.path.join(base_path, 'fig.png'))

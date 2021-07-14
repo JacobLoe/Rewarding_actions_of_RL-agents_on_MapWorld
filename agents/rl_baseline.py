@@ -202,7 +202,7 @@ class RLBaseline(nn.Module):
         # text processing
         self.fc4 = nn.Linear(emsize, max_sequence_length)
 
-        self.fc5 = nn.Linear(2*max_sequence_length, output_size)
+        self.fc5 = nn.Linear(max_sequence_length, output_size)
 
         # self.init_weights()
 
@@ -217,8 +217,7 @@ class RLBaseline(nn.Module):
         output = self.fc4(src)
 
         # TODO use matmul instead of cat
-        # z = torch.matmul(x, output)
-        z = torch.cat((x, output), dim=1)
+        z = torch.mul(x, output)
         z = self.fc5(z)
         z = F.softmax(z, dim=1)
         return z

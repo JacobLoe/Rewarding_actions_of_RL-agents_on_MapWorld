@@ -14,6 +14,7 @@ dependencies:
   - tqdm
   - transformers
   - plotly
+  - python-kaleido
   - pandas
   - pip:
       - gym==0.17.2

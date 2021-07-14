@@ -1,1 +1,1 @@
-from .utils import save_parameters, save_results
+from .utils import save_parameters, save_results, create_figure
