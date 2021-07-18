@@ -99,7 +99,7 @@ class MapWorldGym(gym.Env):
         # map action chosen by agent (integer) to action interpretable by MapWorld
         action = self.total_available_actions[action]
         if action == 'answer':
-            # TODO increase reward for finishing game substantially in comparison to step reward
+            # TODO increase reward for a wrong guess compared to correct guess to encourage
             if self.current_room_name == self.target_room:
                 reward = 1000.0
                 room_found = 1
@@ -134,6 +134,7 @@ class MapWorldGym(gym.Env):
             self.directions = state[1] + ', answer'
         else:
             # TODO not sure what the correct reward here would be for taking an unavailable action
+            # TODO maybe stop penalizing wrong actions
             reward = -100.0
 
         self.state = [self.current_room, self.question, self.directions]
