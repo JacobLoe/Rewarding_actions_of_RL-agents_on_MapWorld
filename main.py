@@ -6,7 +6,6 @@ import time
 import json
 import os
 import argparse
-from datetime import date
 
 
 if __name__ == '__main__':
@@ -62,9 +61,9 @@ if __name__ == '__main__':
     print('Mean steps: ', np.mean(model_steps))
     print('-------------------')
     # print('model_hits', model_hits)
-    print('accurracy', np.sum(model_hits)/len(model_hits))
+    print('accuracy', np.sum(model_hits)/len(model_hits))
     print('-------------------')
     print('Episodes: ', len(model_return))
 
-    create_histogram(model_return, 'return')
+    # create_histogram(model_return, 'return')
     # create_figure(model_steps, model_return, 'REINFORCE', args.base_path)

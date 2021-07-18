@@ -127,7 +127,7 @@ class MapWorldGym(gym.Env):
         """
         if action in self.available_actions:
             # TODO maybe make step reward linear increasing. Early steps are cheap, later costly
-            reward = -10.0
+            reward = -1.0 * self.model_steps #-10.0 / (1 + np.exp(-self.model_steps + 5))
             state = self.mw.upd(action)
             self.current_room_name = path.relpath(state[0], self.ade_path)
             self.current_room = np.array(cv2.imread(state[0]))
@@ -135,7 +135,7 @@ class MapWorldGym(gym.Env):
         else:
             # TODO not sure what the correct reward here would be for taking an unavailable action
             # TODO maybe stop penalizing wrong actions
-            reward = -100.0
+            reward = 0.0
 
         self.state = [self.current_room, self.question, self.directions]
 
