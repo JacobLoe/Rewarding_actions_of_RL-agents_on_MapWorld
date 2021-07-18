@@ -5,10 +5,12 @@ import pandas as pd
 
 
 def create_histogram(data, title):
+    # TODO better title
     title = 'Counts of {}'.format(title)
 
     df = pd.DataFrame(data)
     fig = px.histogram(df, title=title)
+    # TODO save figure with distinct name
     fig.show()
 
 
