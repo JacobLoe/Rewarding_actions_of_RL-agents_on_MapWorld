@@ -1,0 +1,2 @@
+reward for non-available actions = 0
+reward for steps increasing with -1 * num_steps
