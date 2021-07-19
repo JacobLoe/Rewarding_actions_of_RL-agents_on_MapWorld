@@ -12,6 +12,16 @@ import numpy as np
 
 
 def extract_features(model, frame, device):
+    """
+
+    Args:
+        model:
+        frame:
+        device:
+
+    Returns:
+
+    """
     preprocess = transforms.Compose([
         transforms.Resize(299),
         transforms.RandomHorizontalFlip(),

@@ -1,6 +1,6 @@
 from agents import run_random_baseline, reinforce
 from MapWorld import MapWorldGym
-from utils import save_parameters, save_results, create_figure, create_histogram
+from utils import save_parameters, save_results
 import numpy as np
 import time
 import json
@@ -11,9 +11,8 @@ import argparse
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", choices=['random', 'rl', 'eval'], help="")
+    parser.add_argument("model", choices=['random', 'rl'], help="")
     parser.add_argument("--base_path", default="results", help="")
-    parser.add_argument("--save", default="True", help="")
     parser.add_argument("--parameters", default='all_parameters.json', help="")
     args = parser.parse_args()
 
@@ -46,24 +45,11 @@ if __name__ == '__main__':
                                                           base_path=args.base_path)
         save_results(model_return, model_steps, model_hits, args.base_path)
 
-    elif args.model == 'eval':
-        model_return = np.load(os.path.join(args.base_path, 'model_return.npy'))
-        model_hits = np.load(os.path.join(args.base_path, 'model_hits.npy'))
-        model_steps = np.load(os.path.join(args.base_path, 'model_steps.npy'))
-
-    # model_steps = np.cumsum(model_steps)
     print('\n-------------------')
-    # print('Return per model run: ', model_return)
     print('Mean return: ', np.mean(model_return))
     print('-------------------')
-    # print('Total steps per model run', model_steps)
-    # print('Cumulative steps', np.cumsum(model_steps))
     print('Mean steps: ', np.mean(model_steps))
     print('-------------------')
-    # print('model_hits', model_hits)
     print('accuracy', np.sum(model_hits)/len(model_hits))
     print('-------------------')
     print('Episodes: ', len(model_return))
-
-    # create_histogram(model_return, 'return')
-    # create_figure(model_steps, model_return, 'REINFORCE', args.base_path)
