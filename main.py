@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument("model", choices=['random', 'rl'], help="")
     parser.add_argument("--base_path", default="results", help="")
     parser.add_argument("--parameters", default='all_parameters.json', help="")
-    parser.add_argument('--log_level', default='info', choices=['info, debug'],
+    parser.add_argument('--log_level', default='info', choices=['info', 'debug'],
                         help='set which logging messages to print')
     args = parser.parse_args()
 
