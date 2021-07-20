@@ -2,10 +2,18 @@ from agents import run_random_baseline, reinforce
 from MapWorld import MapWorldGym
 from utils import save_parameters, save_results
 import numpy as np
-import time
 import json
 import os
 import argparse
+import logging
+
+logger = logging.getLogger(__name__)
+
+ch = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.propagate = False    # prevent log messages from appearing twice
 
 
 if __name__ == '__main__':
@@ -14,19 +22,24 @@ if __name__ == '__main__':
     parser.add_argument("model", choices=['random', 'rl'], help="")
     parser.add_argument("--base_path", default="results", help="")
     parser.add_argument("--parameters", default='all_parameters.json', help="")
+    parser.add_argument('--log_level', default='info', choices=['info, debug'],
+                        help='set which logging messages to print')
     args = parser.parse_args()
 
-    if args.model == 'random' or args.model == 'rl':
-        with open(args.parameters, 'r') as fp:
-            parameters = json.load(fp)
+    # set log level according to command line
+    log_level = {'info': logging.INFO, 'debug': logging.DEBUG}
+    logging.basicConfig(level=log_level[args.log_level])
 
-        mw_params = parameters['MapWorld']
-        mwg = MapWorldGym(n=mw_params['n'], m=mw_params['m'], n_rooms=mw_params['n_rooms'],
-                          room_types=mw_params['room_types'], room_repetitions=mw_params['room_repetitions'],
-                          ade_path=mw_params['ade_path'],
-                          caption_checkpoints=mw_params['caption_checkpoints'],
-                          caption_vocab=mw_params['caption_vocab'],
-                          image_resolution=(mw_params['image_width'], mw_params['image_height']))
+    with open(args.parameters, 'r') as fp:
+        parameters = json.load(fp)
+
+    mw_params = parameters['MapWorld']
+    mwg = MapWorldGym(n=mw_params['n'], m=mw_params['m'], n_rooms=mw_params['n_rooms'],
+                      room_types=mw_params['room_types'], room_repetitions=mw_params['room_repetitions'],
+                      ade_path=mw_params['ade_path'],
+                      caption_checkpoints=mw_params['caption_checkpoints'],
+                      caption_vocab=mw_params['caption_vocab'],
+                      image_resolution=(mw_params['image_width'], mw_params['image_height']))
 
     if args.model == 'random':
         model_return, model_steps, model_hits = run_random_baseline(mwg,
@@ -42,7 +55,8 @@ if __name__ == '__main__':
         model_return, model_steps, model_hits = reinforce(mwg,
                                                           parameters['rl_baseline'],
                                                           parameters['training'],
-                                                          base_path=args.base_path)
+                                                          base_path=args.base_path,
+                                                          logger=logger)
         save_results(model_return, model_steps, model_hits, args.base_path)
 
     print('\n-------------------')
