@@ -24,10 +24,11 @@ def create_histogram(data, title, plot_path, save_plot=True):
         fig.show()
 
 
-def create_figure(model_steps, model_return, model_name, plot_path, save_plot=True, size=100):
+def create_figure(model_steps, model_return, model_name, plot_path, save_plot=True, filter_return=True, size=100):
     """
 
     Args:
+        filter_return:
         size:
         save_plot:
         model_steps:
@@ -36,13 +37,16 @@ def create_figure(model_steps, model_return, model_name, plot_path, save_plot=Tr
         plot_path:
     """
 
-    filtered_return = uniform_filter1d(model_return, mode='constant', size=size)
+    if filter_return:
+        mreturn = uniform_filter1d(model_return, mode='constant', size=size)
+    else:
+        mreturn = model_return
 
     title = 'Return of {} for {} episodes, moving average over {} episodes'.format(model_name, len(model_return), size)
     x_axis_label = 'Steps'
     y_axis_label = 'Return'
     fig = px.line(x=np.cumsum(model_steps),
-                  y=filtered_return,
+                  y=mreturn,
                   title=title,
                   )
     fig.update_xaxes(title_text=x_axis_label)
