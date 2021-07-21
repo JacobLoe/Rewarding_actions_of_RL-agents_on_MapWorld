@@ -1,22 +1,24 @@
+import os
+
 from MapWorld.maps import ADEMap
 from MapWorld.mapworld import MapWorldWrapper
-from im2txt import Captioning
 import numpy as np
 import gym
 import cv2
 from os import path
+import json
 
 
+# TODO replace cv2 with PIL
 # TODO maybe accelerate game by loading all images into cache before hand
 # TODO add option for turning on "dynamic" actions, the agent can only choose actions that are actually available
 
 class MapWorldGym(gym.Env):
 
     def __init__(self, n=4, m=4, n_rooms=10, room_types=2, room_repetitions=2,
-                 ade_path='../ADE20K_2021_17_01/images/ADE/training/',
-                 caption_checkpoints="./im2txt/checkpoints/im2txt_5M/model.ckpt-5000000",
-                 caption_vocab='./im2txt/vocab/word_counts.txt',
-                 image_resolution=(480, 854)):
+                 ade_path='../../data/ADE20K_2021_17_01/images/ADE/training/',
+                 image_resolution=(480, 854),
+                 captions="./localized_narratives/ade20k_train_captions.json"):
         # the dimensions of the map
         self.n = n
         self.m = m
@@ -26,7 +28,8 @@ class MapWorldGym(gym.Env):
         self.room_types = room_types
         self.room_repetitions = room_repetitions
 
-        self.image_caption_model = Captioning(caption_checkpoints, caption_vocab)
+        with open(captions, 'r') as f:
+            self.dict_captions = json.load(f)
 
         #
         self.current_room = []
@@ -69,6 +72,7 @@ class MapWorldGym(gym.Env):
         # initialise a new MapWorld object with the parameters set in the class init
         ade_map = ADEMap(self.n, self.m, self.n_rooms, (self.room_types, self.room_repetitions))
         self.mw = MapWorldWrapper(ade_map, image_prefix=self.ade_path)
+
         initial_state = self.mw.initial_state   # the initial state is only needed during the reset
 
         # generate question based on the sampled map
@@ -76,7 +80,6 @@ class MapWorldGym(gym.Env):
 
         self.current_room_name = path.relpath(initial_state[0], self.ade_path)
         self.current_room = self.load_image(initial_state[0], self.image_resolution)
-
         # directions contains the available actions in the current room as a string (returned as part of the state)
         # 'select_room is always added at the end
         # available_actions contains them as a list for internal use of the environment
@@ -119,6 +122,7 @@ class MapWorldGym(gym.Env):
             self.room_found = 1
         else:
             reward = -1000.0
+            self.room_found = 0
         # Terminate the game
         self.done = True
         self.state = [self.current_room, self.question, self.directions]
@@ -159,10 +163,9 @@ class MapWorldGym(gym.Env):
         #
         target_room = path.relpath(image_path, self.ade_path)
         #
-        question = self.image_caption_model.image(image_path)['1']['Sentence']
-        # capitalize first letter, remove trailing space and stop, add stop at proper place
-        question = question.capitalize().strip('.').strip() + '.'
-        return question, target_room
+        caption_key = os.path.split(target_room)[1].strip('.jpg')
+        target_caption = self.dict_captions[caption_key]
+        return target_caption, target_room
 
     def load_image(self, image_path, image_resolution):
         """
@@ -171,10 +174,13 @@ class MapWorldGym(gym.Env):
             image_path: string
             image_resolution: tuple
 
-        Returns: Numpy array, reshaped image, height, width, channels,
+        Returns: Numpy array, reshaped image, (height, width, channels)
         """
         # TODO make resizing dependent on aspect ratio of source to prevent distortions
         image = cv2.imread(image_path)
+        if np.shape(image)[2] == 1:
+            print(np.shape(image))
+            print(image_path)
         image = cv2.resize(image, image_resolution)
         image = np.array(image)
 

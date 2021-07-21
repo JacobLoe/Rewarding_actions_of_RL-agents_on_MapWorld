@@ -160,13 +160,13 @@ class ADEMap(AbstractMap):
             _cat_instances_bytes = f.read()
             _cat_instances_str = _cat_instances_bytes.decode('utf-8')
             _cat_instances = json.loads(_cat_instances_str)
-    elif os.path.isfile('ade_cat_instances.json.gz'):
-        with gzip.open('ade_cat_instances.json.gz', 'rb') as f:
-            _cat_instances_bytes = f.read()
-            _cat_instances_str = _cat_instances_bytes.decode('utf-8')
-            _cat_instances = json.loads(_cat_instances_str)
-    else:
-        raise FileNotFoundError('"ade_cat_instance.json.gz" not found. Run make_and_write_instance_list.py?')
+    # elif os.path.isfile('ade_cat_instances.json.gz'):
+    #     with gzip.open('ade_cat_instances.json.gz', 'rb') as f:
+    #         _cat_instances_bytes = f.read()
+    #         _cat_instances_str = _cat_instances_bytes.decode('utf-8')
+    #         _cat_instances = json.loads(_cat_instances_str)
+    # else:
+    #     raise FileNotFoundError('"ade_cat_instance.json.gz" not found. Run make_and_write_instance_list.py ?')
 
     def __init__(self, *args):
         if len(args) > 0:
@@ -310,8 +310,9 @@ class ADEMap(AbstractMap):
 
 def make_instance_list(ade_path, categories):
     place_instances = {}
+
     for this_type in categories:
-        full_paths = glob(os.path.join(ade_path, this_type, '/*.jpg'))
+        full_paths = glob(os.path.join(ade_path, this_type, '*.jpg'))
         place_instances[this_type] = ['/'.join(this_path.split('/')
                                                [len(ade_path.split('/'))-1:])
                                       for this_path in full_paths]
@@ -328,4 +329,7 @@ def make_and_write_instance_list(ade_path, filename):
         json_bytes = json_s.encode('utf-8')
         f.write(json_bytes)
 
-# make_and_write_instance_list('../../ADE20K_2021_17_01/images/ADE/training/', 'ade_cat_instances.json.gz')
+
+if __name__ == '__main__':
+    make_and_write_instance_list('../../data/ADE20K_2021_17_01/images/ADE/training/',
+                                 'MapWorld/ade_cat_instances.json.gz')

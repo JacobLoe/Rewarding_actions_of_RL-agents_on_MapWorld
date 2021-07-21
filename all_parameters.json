@@ -9,7 +9,8 @@
         "n": 4,
         "n_rooms": 10,
         "room_repetitions": 2,
-        "room_types": 2
+        "room_types": 2,
+        "captions": "localized_narratives/ade20k_train_captions.json"
     },
     "rl_baseline": {
         "embedding_model": "bert-base-uncased",

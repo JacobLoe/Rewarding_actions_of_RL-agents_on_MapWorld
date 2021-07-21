@@ -21,9 +21,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("model", choices=['random', 'rl'], help="")
     parser.add_argument("--base_path", default="results", help="")
-    parser.add_argument("--parameters", default='all_parameters.json', help="")
+    parser.add_argument("--parameters", default='all_parameters.json'
+                        , help="The path to the ")
     parser.add_argument('--log_level', default='info', choices=['info', 'debug'],
                         help='set which logging messages to print')
+    parser.add_argument('--save_results', type=bool, default=True, help='')
     args = parser.parse_args()
 
     # set log level according to command line
@@ -37,27 +39,33 @@ if __name__ == '__main__':
     mwg = MapWorldGym(n=mw_params['n'], m=mw_params['m'], n_rooms=mw_params['n_rooms'],
                       room_types=mw_params['room_types'], room_repetitions=mw_params['room_repetitions'],
                       ade_path=mw_params['ade_path'],
-                      caption_checkpoints=mw_params['caption_checkpoints'],
-                      caption_vocab=mw_params['caption_vocab'],
-                      image_resolution=(mw_params['image_width'], mw_params['image_height']))
+                      image_resolution=(mw_params['image_width'], mw_params['image_height']),
+                      captions=mw_params['captions'])
 
     if args.model == 'random':
-        model_return, model_steps, model_hits = run_random_baseline(mwg,
+        parameters = {'training': parameters['training'],
+                      'MapWorld': mw_params}
+        if args.save_results:
+            save_parameters(parameters, args.base_path)
+        model_return, model_steps, model_hits = run_random_baseline(mwg, logger,
                                                                     episodes=parameters['training']['num_episodes'])
-        save_results(model_return, model_steps, model_hits, args.base_path)
+        if args.save_results:
+            save_results(model_return, model_steps, model_hits, args.base_path)
 
     elif args.model == 'rl':
         # save parameters before running the model
         parameters = {'rl_baseline': parameters['rl_baseline'],
                       'training': parameters['training'],
                       'MapWorld': mw_params}
-        save_parameters(parameters, args.base_path)
+        if args.save_results:
+            save_parameters(parameters, args.base_path)
         model_return, model_steps, model_hits = reinforce(mwg,
                                                           parameters['rl_baseline'],
                                                           parameters['training'],
                                                           base_path=args.base_path,
                                                           logger=logger)
-        save_results(model_return, model_steps, model_hits, args.base_path)
+        if args.save_results:
+            save_results(model_return, model_steps, model_hits, args.base_path)
 
     print('\n-------------------')
     print('Mean return: ', np.mean(model_return))

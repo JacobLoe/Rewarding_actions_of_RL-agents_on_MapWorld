@@ -7,8 +7,6 @@ from transitions import Machine
 from numpy import random
 from os import path
 
-# TODO rework mapworld such that notebook works again
-
 
 class MapWorld(object):
     '''The MapWorld environment. State machine for one agent.

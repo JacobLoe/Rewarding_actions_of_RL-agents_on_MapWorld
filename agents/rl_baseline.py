@@ -17,6 +17,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger):
         training_parameters:
         base_path:
         mwg:
+        logger:
 
     Returns:
 
@@ -39,7 +40,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger):
     checkpoint_frequency = training_parameters['checkpoint_frequency']  # how often should a checkpoint be created
     starting_episode = 0
 
-    # TODO look into different loss functions
+    # TODO look into different loss functions ADAM ?
     # TODO maybe also use lr scheduler (adjust lr if) // Gradient clipping
     # TODO record loss function in parameters ?
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
