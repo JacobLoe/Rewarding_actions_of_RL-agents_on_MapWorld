@@ -13,7 +13,7 @@
         "captions": "localized_narratives/ade20k_train_captions.json"
     },
     "rl_baseline": {
-        "embedding_model": "bert-base-uncased",
+        "embedding_model": "paraphrase-MiniLM-L6-v2",
         "embedding_size": 384,
         "max_sequence_length": 25
     },
@@ -22,7 +22,7 @@
         "gamma": 0.99,
         "learning_rate": 0.01,
         "max_steps": 15,
-        "num_episodes": 10000,
+        "num_episodes": 100000,
         "checkpoint_frequency": 100
     }
 }

@@ -160,13 +160,6 @@ class ADEMap(AbstractMap):
             _cat_instances_bytes = f.read()
             _cat_instances_str = _cat_instances_bytes.decode('utf-8')
             _cat_instances = json.loads(_cat_instances_str)
-    # elif os.path.isfile('ade_cat_instances.json.gz'):
-    #     with gzip.open('ade_cat_instances.json.gz', 'rb') as f:
-    #         _cat_instances_bytes = f.read()
-    #         _cat_instances_str = _cat_instances_bytes.decode('utf-8')
-    #         _cat_instances = json.loads(_cat_instances_str)
-    # else:
-    #     raise FileNotFoundError('"ade_cat_instance.json.gz" not found. Run make_and_write_instance_list.py ?')
 
     def __init__(self, *args):
         if len(args) > 0:
@@ -188,16 +181,31 @@ class ADEMap(AbstractMap):
             G.nodes[this_node]['target'] = False
 
         unassigned = [this_node for this_node in G.nodes() if G.degree[this_node] > 1]
-
         target_types = np.random.choice(self._target_cats,
                                         len(target_type_distr), replace=False)
-        for target_type, repetitions in zip(target_types, target_type_distr):
-            for _ in range(repetitions):
-                this_node = unassigned[np.random.choice(range(len(unassigned)))]
-                G.nodes[this_node]['base_type'] = 'indoor'
-                G.nodes[this_node]['type'] = target_type
-                G.nodes[this_node]['target'] = True
-                unassigned.remove(this_node)
+        if unassigned:
+            for target_type, repetitions in zip(target_types, target_type_distr):
+                for _ in range(repetitions):
+                    try:
+                        this_node = unassigned[np.random.choice(range(len(unassigned)))]
+                        G.nodes[this_node]['base_type'] = 'indoor'
+                        G.nodes[this_node]['type'] = target_type
+                        G.nodes[this_node]['target'] = True
+                        unassigned.remove(this_node)
+                    except:
+                        print('G', G)
+                        print('g.degree', G.degree)
+                        print('G.nodes', G.nodes)
+                        for n in G.nodes:
+                            print(G.nodes[n]['type'])
+                        print('\n')
+                        print('outdoor', outdoor)
+                        print('unassigned', unassigned)
+                        print('target_types', target_types)
+                        print('target_type', target_type)
+                        print('repetitions', repetitions)
+                        raise Exception
+
         remainder_types = list(set(self._target_cats)
                                .difference(set(target_types))
                                .union(set(self._distractor_cats)))

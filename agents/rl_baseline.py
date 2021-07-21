@@ -46,7 +46,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger):
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
     # TODO look into what the model was trained on. How does it deal with multiple sentences ?
-    em_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+    em_model = SentenceTransformer(model_parameters['embedding_model'])
 
     ck_path = os.path.join(base_path, 'checkpoint.pt')
 
@@ -96,13 +96,10 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger):
             logger.debug(f'Time for image preprocessing: {time()-t_pp}')
 
             t_ppt = time()
-            # TODO atm only supports feeding directions because of memory constraints
-            #   max sequence length of the transformer 512 token
             text = s_0[1] + ' ' + s_0[2] #text + ' ' + s_0[2]
             embeddings = em_model.encode(text)
             embedded_text_tensor = torch.FloatTensor([embeddings]).to(device)
             logger.debug(f'Time for text embedding: {time()-t_ppt}')
-            logger.debug(f'Time for preprocessing: {time()-t_pp}')
 
             t_ga = time()
             action_probabilities = model(im_tensor,
