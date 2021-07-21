@@ -9,7 +9,6 @@ from os import path
 import json
 
 
-# TODO replace cv2 with PIL
 # TODO maybe accelerate game by loading all images into cache before hand
 # TODO add option for turning on "dynamic" actions, the agent can only choose actions that are actually available
 
@@ -17,7 +16,7 @@ class MapWorldGym(gym.Env):
 
     def __init__(self, n=4, m=4, n_rooms=10, room_types=2, room_repetitions=2,
                  ade_path='../../data/ADE20K_2021_17_01/images/ADE/training/',
-                 image_resolution=(480, 854),
+                 image_resolution=(360, 360),
                  captions="./localized_narratives/ade20k_train_captions.json"):
         # the dimensions of the map
         self.n = n
@@ -138,12 +137,12 @@ class MapWorldGym(gym.Env):
 
         Returns: a float, the reward for the action
         """
-        if action in self.available_actions:
+        if action: #in self.available_actions:
             # TODO maybe make step reward linear increasing. Early steps are cheap, later costly
             reward = -1.0 * self.model_steps #-10.0 / (1 + np.exp(-self.model_steps + 5))
             state = self.mw.upd(action)
             self.current_room_name = path.relpath(state[0], self.ade_path)
-            self.current_room = np.array(cv2.imread(state[0]))
+            self.current_room = self.load_image(state[0], self.image_resolution)
             self.directions = state[1] + f', {self.total_available_actions[4]}.'
         else:
             # TODO not sure what the correct reward here would be for taking an unavailable action
@@ -178,9 +177,8 @@ class MapWorldGym(gym.Env):
         """
         # TODO make resizing dependent on aspect ratio of source to prevent distortions
         image = cv2.imread(image_path)
-        if np.shape(image)[2] == 1:
-            print(np.shape(image))
-            print(image_path)
+        if len(np.shape(image)) != 3:
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
         image = cv2.resize(image, image_resolution)
         image = np.array(image)
 

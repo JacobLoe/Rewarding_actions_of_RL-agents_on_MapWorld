@@ -27,6 +27,7 @@ def run_random_baseline(mapgame, logger, episodes=20000):
             t_s = time()
             action = np.random.randint(0, len(available_actions))
             _, _, done, room_found = mapgame.step(action)
+
             logger.debug(f'Time for env step {time()-t_s}')
         t_a = time()
         model_return.append(mapgame.model_return)

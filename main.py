@@ -23,13 +23,13 @@ if __name__ == '__main__':
     parser.add_argument("--base_path", default="results", help="")
     parser.add_argument("--parameters", default='all_parameters.json'
                         , help="The path to the ")
-    parser.add_argument('--log_level', default='info', choices=['info', 'debug'],
+    parser.add_argument('--log_level', default='warning', choices=['warning', 'info', 'debug'],
                         help='set which logging messages to print')
     parser.add_argument('--save_results', type=bool, default=True, help='')
     args = parser.parse_args()
 
     # set log level according to command line
-    log_level = {'info': logging.INFO, 'debug': logging.DEBUG}
+    log_level = {'warning': logging.WARNING, 'info': logging.INFO, 'debug': logging.DEBUG}
     logging.basicConfig(level=log_level[args.log_level])
 
     with open(args.parameters, 'r') as fp:
