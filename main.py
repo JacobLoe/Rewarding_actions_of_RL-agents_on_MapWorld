@@ -41,7 +41,6 @@ if __name__ == '__main__':
                       ade_path=mw_params['ade_path'],
                       image_resolution=(mw_params['image_width'], mw_params['image_height']),
                       captions=mw_params['captions'])
-
     if args.model == 'random':
         parameters = {'training': parameters['training'],
                       'MapWorld': mw_params}

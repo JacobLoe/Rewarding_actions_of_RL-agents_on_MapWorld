@@ -22,7 +22,7 @@
         "gamma": 0.99,
         "learning_rate": 0.01,
         "max_steps": 15,
-        "num_episodes": 100000,
+        "num_episodes": 200000,
         "checkpoint_frequency": 100
     }
 }

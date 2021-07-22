@@ -137,7 +137,7 @@ class MapWorldGym(gym.Env):
 
         Returns: a float, the reward for the action
         """
-        if action: #in self.available_actions:
+        if action in self.available_actions:
             # TODO maybe make step reward linear increasing. Early steps are cheap, later costly
             reward = -1.0 * self.model_steps #-10.0 / (1 + np.exp(-self.model_steps + 5))
             state = self.mw.upd(action)

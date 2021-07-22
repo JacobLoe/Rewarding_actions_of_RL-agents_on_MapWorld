@@ -75,8 +75,6 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger):
         s_0 = mwg.reset()
         logger.debug(f'Time for env reset: {time()-t_pr}')
 
-        text = s_0[1]
-
         states_image = []
         states_text = []
         rewards = []
@@ -96,7 +94,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger):
             logger.debug(f'Time for image preprocessing: {time()-t_pp}')
 
             t_ppt = time()
-            text = s_0[1] + ' ' + s_0[2] #text + ' ' + s_0[2]
+            text = s_0[1] + ' ' + s_0[2]    # s_0[1] is the Caption/Question, s_0[2] are the available directions
             embeddings = em_model.encode(text)
             embedded_text_tensor = torch.FloatTensor([embeddings]).to(device)
             logger.debug(f'Time for text embedding: {time()-t_ppt}')
@@ -207,39 +205,37 @@ class RLBaseline(nn.Module):
     def __init__(self, emsize, max_sequence_length, output_size):
         super(RLBaseline, self).__init__()
 
-        # TODO rename fc-layer to something useful
         # TODO look into padding of input image
         # CNN
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(121104, 1200)   # layer size is result of image res (480x854) after conv + pool
+        self.fc1 = nn.Linear(121104, 1200)   # layer size is result of image res (360x360) after conv + pool
         # TODO with the sentence transformer max_sequence_length is not a thing anymore
         # TODO maybe replace it with something else (emsize, etc)
         # TODO use tanh for both last fc like in https://arxiv.org/pdf/1902.07742.pdf
         self.fc2 = nn.Linear(1200, max_sequence_length)
 
         # text processing
-        self.fc4 = nn.Linear(emsize, max_sequence_length)
+        self.fc3 = nn.Linear(emsize, max_sequence_length)
 
-        self.fc5 = nn.Linear(max_sequence_length, output_size)
+        self.fc4 = nn.Linear(max_sequence_length, output_size)
 
         # self.init_weights()
 
     def forward(self, im, src):
-        x = self.pool(F.relu(self.conv1(im)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1)     # flatten all dimensions except batch
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        cnn = self.pool(F.relu(self.conv1(im)))
+        cnn = self.pool(F.relu(self.conv2(cnn)))
+        cnn = torch.flatten(cnn, 1)     # flatten all dimensions except batch
+        cnn = F.relu(self.fc1(cnn))
+        cnn = F.relu(self.fc2(cnn))
 
-        # TODO rename output
-        output = self.fc4(src)
+        text = self.fc3(src)
 
-        z = torch.mul(x, output)
-        z = self.fc5(z)
-        z = F.softmax(z, dim=1)
-        return z
+        output = torch.mul(cnn, text)
+        output = self.fc4(output)
+        actions = F.softmax(output, dim=1)
+        return actions
 
     def init_weights(self):
         # TODO add init for cnn
