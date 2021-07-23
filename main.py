@@ -13,34 +13,45 @@ ch = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
-logger.propagate = False    # prevent log messages from appearing twice
+logger.propagate = False    # prevents log messages from appearing twice
 
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("model", choices=['random', 'rl'], help="")
-    parser.add_argument("--base_path", default="results", help="")
+    parser.add_argument("--base_path", default="results",
+                        help="Path where results, checkpoints and parameters are saved to")
     parser.add_argument("--parameters", default='all_parameters.json'
-                        , help="The path to the ")
+                        , help="The path to the global parameters json")
     parser.add_argument('--log_level', default='warning', choices=['warning', 'info', 'debug'],
                         help='set which logging messages to print')
     parser.add_argument('--save_results', type=bool, default=True, help='')
+    parser.add_argument('--load_checkpoint', type=bool, default='',
+                        help='If set to True, parameters and checkpoints are loaded from args.base_path')
     args = parser.parse_args()
 
     # set log level according to command line
     log_level = {'warning': logging.WARNING, 'info': logging.INFO, 'debug': logging.DEBUG}
     logging.basicConfig(level=log_level[args.log_level])
 
-    with open(args.parameters, 'r') as fp:
-        parameters = json.load(fp)
+    #
+    if args.load_checkpoint:
+        with open(args.parameters, 'r') as fp:
+            parameters = json.load(fp)
+    else:
+        param_path = os.path.join(args.base_path, 'model_parameters.json')
+        with open(param_path, 'r') as fp:
+            parameters = json.load(fp)
 
+    # initialise a MapWorld-object from the parameters
     mw_params = parameters['MapWorld']
     mwg = MapWorldGym(n=mw_params['n'], m=mw_params['m'], n_rooms=mw_params['n_rooms'],
                       room_types=mw_params['room_types'], room_repetitions=mw_params['room_repetitions'],
                       ade_path=mw_params['ade_path'],
                       image_resolution=(mw_params['image_width'], mw_params['image_height']),
                       captions=mw_params['captions'])
+
     if args.model == 'random':
         parameters = {'training': parameters['training'],
                       'MapWorld': mw_params}

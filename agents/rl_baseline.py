@@ -173,7 +173,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger):
         logger.debug(f'Time for an full episode: {time()-t_pr} \n')
 
         # save the progress of the training every checkpoint_frequency episodes
-        if episode%checkpoint_frequency == 0:
+        if episode % checkpoint_frequency == 0:
             torch.save({
                 'current_episode': episode,
                 'model_state_dict': model.state_dict(),
@@ -223,14 +223,14 @@ class RLBaseline(nn.Module):
 
         # self.init_weights()
 
-    def forward(self, im, src):
+    def forward(self, im, text):
         cnn = self.pool(F.relu(self.conv1(im)))
         cnn = self.pool(F.relu(self.conv2(cnn)))
         cnn = torch.flatten(cnn, 1)     # flatten all dimensions except batch
         cnn = F.relu(self.fc1(cnn))
         cnn = F.relu(self.fc2(cnn))
 
-        text = self.fc3(src)
+        text = self.fc3(text)
 
         output = torch.mul(cnn, text)
         output = self.fc4(output)
