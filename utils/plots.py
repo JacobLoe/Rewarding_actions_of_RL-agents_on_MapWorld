@@ -2,6 +2,7 @@ import numpy as np
 import plotly.express as px
 import pandas as pd
 from scipy.ndimage.filters import uniform_filter1d
+import os
 
 
 def create_histogram(data, title, plot_path, save_plot=True):
@@ -56,3 +57,34 @@ def create_figure(model_steps, model_return, model_name, plot_path, save_plot=Tr
         # TODO save HTML plot
     else:
         fig.show()
+
+
+def create_all_plots(model_return, model_steps, model_hits, num_episodes,
+                     plot_base_path, save_plots, filter_return, filter_size):
+    """
+
+    Args:
+        model_return:
+        model_steps:
+        model_hits:
+        num_episodes:
+        plot_base_path:
+        save_plots:
+        filter_return: bool, Sets whether to apply a moving average to the return of the model
+        filter_size:
+    """
+    title = 'the return over {}'.format(num_episodes)
+    plot_path = os.path.join(plot_base_path, 'return_histogram.png')
+    create_histogram(model_return, title, plot_path, save_plot=save_plots)
+
+    title = 'room guesses over {}'.format(num_episodes)
+    plot_path = os.path.join(plot_base_path, 'hits_histogram.png')
+    create_histogram(model_hits, title, plot_path, save_plot=save_plots)
+
+    title = 'the steps over {}'.format(num_episodes)
+    plot_path = os.path.join(plot_base_path, 'steps_histogram.png')
+    create_histogram(model_steps, title, plot_path, save_plot=save_plots)
+
+    plot_path = os.path.join(plot_base_path, 'return_over_episodes.png')
+    create_figure(model_steps, model_return, 'REINFORCE', plot_path, save_plot=save_plots,
+                  filter_return=filter_return, size=filter_size)
