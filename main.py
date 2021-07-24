@@ -7,6 +7,7 @@ import os
 import argparse
 import logging
 
+
 logger = logging.getLogger(__name__)
 
 ch = logging.StreamHandler()
@@ -17,6 +18,10 @@ logger.propagate = False    # prevents log messages from appearing twice
 
 
 if __name__ == '__main__':
+
+    # action_space = spaces.Discrete(5)
+    # print(type(action_space))
+    # print(action_space)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("model", choices=['random', 'rl'], help="")
@@ -35,8 +40,7 @@ if __name__ == '__main__':
     log_level = {'warning': logging.WARNING, 'info': logging.INFO, 'debug': logging.DEBUG}
     logging.basicConfig(level=log_level[args.log_level])
 
-    #
-    if args.load_checkpoint:
+    if not args.load_checkpoint:
         with open(args.parameters, 'r') as fp:
             parameters = json.load(fp)
     else:

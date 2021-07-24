@@ -3,6 +3,7 @@ import argparse
 import json
 import glob
 import os
+import numpy as np
 
 if __name__ == '__main__':
 
@@ -19,6 +20,11 @@ if __name__ == '__main__':
             image_name = line['image_id']
             caption = line['caption']
             localized_narratives[image_name] = caption
+
+    c = [len(localized_narratives[k].split()) for k in localized_narratives]
+    print(f'Min caption length {np.min(c)}')
+    print(f'Max caption length {np.max(c)}')
+    print(f'Mean caption length {np.mean(c)}')
 
     with open(args.out_path, 'w') as f:
         json.dump(localized_narratives, f, sort_keys=True)
@@ -91,7 +97,6 @@ if __name__ == '__main__':
     i = 0
     for p in path:
         im = os.path.split(p)[1]
-        # print(im)
         try:
             c = g[im.strip('.jpg')]
         except:

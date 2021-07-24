@@ -1,1 +1,1 @@
-from .MapGame import MapWorldGym
+from .MapWorldGym import MapWorldGym

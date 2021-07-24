@@ -13,7 +13,6 @@ If that is missing, run make_and_write_instance_list() (for which you
 need to have the corpus available).
 '''
 
-# TODO:
 # - use visual similarity to sample maximally confusable images from
 #   target type.
 
@@ -293,7 +292,6 @@ class ADEMap(AbstractMap):
         # pick initial
         if pick_initial:
             initial_node = np.random.choice([node for node in nodes if node['base_type'] == 'outdoor'])
-            # TODO: make selection of initial more flexible?
             initial = str(initial_node['id'])
             initial_type = initial_node['type']
         else:

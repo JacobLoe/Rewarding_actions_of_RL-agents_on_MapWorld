@@ -69,7 +69,6 @@ class MapWorldWrapper(object):
         return [image_path, self.print_dirs(avail_dirs)]
 
     def print_dirs(self, avail_dirs):
-        # TODO use comma as separator instead of spaces ?
         out_string = 'You can go: {}'.format(', '.join(avail_dirs))
         return out_string
 

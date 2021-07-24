@@ -88,13 +88,13 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger):
 
             t_pp = time()
             # preprocess state (image and text)
-            im = s_0[0]
+            im = s_0['current_room']
             im = np.reshape(im, (np.shape(im)[2], np.shape(im)[1], np.shape(im)[0]))
             im_tensor = torch.FloatTensor([im]).to(device)
             logger.debug(f'Time for image preprocessing: {time()-t_pp}')
 
             t_ppt = time()
-            text = s_0[1] + ' ' + s_0[2]    # s_0[1] is the Caption/Question, s_0[2] are the available directions
+            text = s_0['question'] + ' ' + s_0['directions']
             embeddings = em_model.encode(text)
             embedded_text_tensor = torch.FloatTensor([embeddings]).to(device)
             logger.debug(f'Time for text embedding: {time()-t_ppt}')
