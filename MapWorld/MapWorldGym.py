@@ -1,7 +1,7 @@
 from MapWorld.maps import ADEMap
 from MapWorld.mapworld import MapWorldWrapper
 import numpy as np
-from gym import Env
+from gym import Env, spaces, Space
 import cv2
 from os import path
 import json
@@ -41,6 +41,10 @@ class MapWorldGym(Env):
         self.image_resolution = image_resolution
         # maps the actions actions input into MapWorldGym to actions interpretable by MapWorld
         self.total_available_actions = {0: 'north', 1: 'east', 2: 'south', 3: 'west', 4: 'select_room'}
+
+
+        self.action_space = spaces.Discrete(len(self.total_available_actions))
+        self.observation_space = 0
 
         ##########################################################
         # The variables defined here in the init are placeholders.
