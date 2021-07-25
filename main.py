@@ -19,10 +19,6 @@ logger.propagate = False    # prevents log messages from appearing twice
 
 if __name__ == '__main__':
 
-    # action_space = spaces.Discrete(5)
-    # print(type(action_space))
-    # print(action_space)
-
     parser = argparse.ArgumentParser()
     parser.add_argument("model", choices=['random', 'rl'], help="")
     parser.add_argument("--base_path", default="results",
@@ -77,7 +73,8 @@ if __name__ == '__main__':
                                                           parameters['rl_baseline'],
                                                           parameters['training'],
                                                           base_path=args.base_path,
-                                                          logger=logger)
+                                                          logger=logger,
+                                                          save_results=args.save_results)
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
 
