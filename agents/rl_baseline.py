@@ -31,7 +31,12 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
     logger.debug('Devive: {}'.format(device))
     emsize = model_parameters['embedding_size']  # embedding size of the bert model
     max_sequence_length = model_parameters['max_sequence_length']    # maximum length the text state of the env will get padded to
-    model = RLBaseline(emsize, max_sequence_length, len(available_actions)).to(device)
+    output_size = len(available_actions)
+    num_layers = model_parameters['num_layers']
+    model = RLBaseline(emsize,
+                       max_sequence_length,
+                       output_size,
+                       num_layers).to(device)
 
     lr = training_parameters['learning_rate']
     num_episodes = training_parameters['num_episodes']
@@ -44,8 +49,9 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
     # TODO look into different loss functions ADAM ?
     # TODO maybe also use lr scheduler (adjust lr if) // Gradient clipping
     # TODO record loss function in parameters ?
-    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
+    # TODO increase em model sentence max length
     # TODO look into what the model was trained on. How does it deal with multiple sentences ?
     em_model = SentenceTransformer(model_parameters['embedding_model'])
 
@@ -151,8 +157,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
 
                     t_lp = time()
                     logprob = torch.log(model(im_tensor, inputs_tensor))
-                    selected_logprobs = reward_tensor * \
-                                        torch.gather(logprob, 1, action_tensor.unsqueeze(1)).squeeze()
+                    selected_logprobs = reward_tensor * torch.gather(logprob, 1, action_tensor.unsqueeze(1)).squeeze()
                     loss = -selected_logprobs.mean()
                     logger.debug(f'Time for loss calc: {time()-t_lp}')
 
@@ -203,25 +208,27 @@ def discount_rewards(rewards, gamma=0.99):
 
 
 class RLBaseline(nn.Module):
-    def __init__(self, emsize, max_sequence_length, output_size):
+    def __init__(self, emsize, max_sequence_length, output_size, num_layers):
         super(RLBaseline, self).__init__()
+        # TODO with the sentence transformer max_sequence_length is not a thing anymore
+        # TODO maybe replace it with something else (emsize, etc)
+        # TODO https://arxiv.org/pdf/1902.07742.pdf
 
         # TODO look into padding of input image
         # CNN
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(121104, 1200)   # layer size is result of image res (360x360) after conv + pool
-        # TODO with the sentence transformer max_sequence_length is not a thing anymore
-        # TODO maybe replace it with something else (emsize, etc)
-        # TODO use tanh for both last fc like in https://arxiv.org/pdf/1902.07742.pdf
-        self.fc2 = nn.Linear(1200, max_sequence_length)
+        self.fc_cnn1 = nn.Linear(121104, 1200)   # layer size is result of image res (360x360) after conv + pool
 
-        # replace with lstm
+        self.fc_cnn2 = nn.Linear(1200, max_sequence_length)
+
         # text processing
-        self.fc3 = nn.Linear(emsize, max_sequence_length)
+        self.lstm1 = nn.LSTM(1, emsize, batch_first=True, num_layers=num_layers)
+        self.fc_lstm = nn.Linear(emsize, max_sequence_length)
 
-        self.fc4 = nn.Linear(max_sequence_length, output_size)
+        self.fc4 = nn.Linear(max_sequence_length, max_sequence_length)
+        self.fc5 = nn.Linear(max_sequence_length, output_size)
 
         # self.init_weights()
 
@@ -229,13 +236,17 @@ class RLBaseline(nn.Module):
         cnn = self.pool(F.relu(self.conv1(im)))
         cnn = self.pool(F.relu(self.conv2(cnn)))
         cnn = torch.flatten(cnn, 1)     # flatten all dimensions except batch
-        cnn = F.relu(self.fc1(cnn))
-        cnn = F.relu(self.fc2(cnn))
+        cnn = F.relu(self.fc_cnn1(cnn))
+        cnn = torch.tanh(self.fc_cnn2(cnn))
 
-        text = self.fc3(text)
+        text, _ = self.lstm1(text.unsqueeze(-1))
+
+        text = torch.tanh(self.fc_lstm(text))
+        text = torch.mean(text, dim=1)
 
         output = torch.mul(cnn, text)
-        output = self.fc4(output)
+        output = F.relu(self.fc4(output))
+        output = self.fc5(output)
         actions = F.softmax(output, dim=1)
         return actions
 
