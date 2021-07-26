@@ -9,10 +9,11 @@ from time import time
 
 
 # adapted from: https://towardsdatascience.com/learning-reinforcement-learning-reinforce-with-pytorch-5e8ad7fc7da0
-def reinforce(mwg, model_parameters, training_parameters, base_path, logger):
+def reinforce(mwg, model_parameters, training_parameters, base_path, logger, save_results):
     """
 
     Args:
+        save_results:
         model_parameters:
         training_parameters:
         base_path:
@@ -50,13 +51,13 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger):
 
     ck_path = os.path.join(base_path, 'checkpoint.pt')
 
-    if os.path.isdir(ck_path):
+    if os.path.isdir(ck_path) and save_results:
         # if a checkpoint for the model already exist resume from there
         checkpoint = torch.load(ck_path)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         starting_episode = checkpoint['current_episode']
-    if not os.path.isdir(base_path):
+    elif not os.path.isdir(base_path) and save_results:
         os.makedirs(base_path)
 
     total_rewards = []
@@ -94,7 +95,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger):
             logger.debug(f'Time for image preprocessing: {time()-t_pp}')
 
             t_ppt = time()
-            text = s_0['question'] + ' ' + s_0['directions']
+            text = s_0['text_state']
             embeddings = em_model.encode(text)
             embedded_text_tensor = torch.FloatTensor([embeddings]).to(device)
             logger.debug(f'Time for text embedding: {time()-t_ppt}')
@@ -173,7 +174,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger):
         logger.debug(f'Time for an full episode: {time()-t_pr} \n')
 
         # save the progress of the training every checkpoint_frequency episodes
-        if episode % checkpoint_frequency == 0:
+        if episode % checkpoint_frequency == 0 and save_results:
             torch.save({
                 'current_episode': episode,
                 'model_state_dict': model.state_dict(),
@@ -216,6 +217,7 @@ class RLBaseline(nn.Module):
         # TODO use tanh for both last fc like in https://arxiv.org/pdf/1902.07742.pdf
         self.fc2 = nn.Linear(1200, max_sequence_length)
 
+        # replace with lstm
         # text processing
         self.fc3 = nn.Linear(emsize, max_sequence_length)
 

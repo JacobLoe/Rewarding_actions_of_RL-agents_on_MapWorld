@@ -43,7 +43,7 @@ class MapWorldGym(Env):
         self.total_available_actions = {0: 'north', 1: 'east', 2: 'south', 3: 'west', 4: 'select_room'}
 
         ##########################################################
-        # The variables defined here in the init are placeholders.
+        # The variables defined in the init are placeholders and are only there function is explained here
         # They only have proper values after calling the reset function
 
         # current_room is represented by an image as a numpy array
@@ -59,8 +59,11 @@ class MapWorldGym(Env):
         # directions contains the available actions in the current room as a string (returned as part of the state)
         # 'select_room' is always added at the end
         # available_actions contains them as a list for internal use of the environment
-        self.directions = str()
+        self.directions = ''
         self.available_actions = []
+
+        #
+        self.text_state = ''
 
         # the state consists of: current room as numpy ndarray of shape (, , 3),
         # target room question(caption>) as string,
@@ -85,8 +88,9 @@ class MapWorldGym(Env):
         self.current_room_name = path.relpath(initial_state[0], self.ade_path)
         self.current_room = self.load_image(initial_state[0], self.image_resolution)
 
-        self.directions = initial_state[1] + f', {self.total_available_actions[4]}.'
-        # prepending fluff is removed, actions are separated by ","
+        # append action 'select_room' directions returned by MapWorld
+        self.directions = initial_state[1] + f' or {self.total_available_actions[4]}.'
+        # remove prepending fluff, actions are separated by ","
         self.available_actions = self.directions[12:].split()
 
         # concatenate the target caption and directions
@@ -95,10 +99,12 @@ class MapWorldGym(Env):
         self.model_return = 0
         self.model_steps = 0
 
+        # con
+        self.text_state = self.target_room + ' ' + self.directions
+
         # return the initial state
         self.state = {'current_room': self.current_room,
-                      'question': self.target_room,
-                      'directions': self.directions}
+                      'text_state': self.text_state}
         return self.state
 
     def step(self, action_index):
@@ -134,8 +140,7 @@ class MapWorldGym(Env):
         self.done = True
 
         self.state = {'current_room': self.current_room,
-                      'question': self.target_room,
-                      'directions': self.directions}
+                      'text_state': self.directions}
 
         return reward
 
@@ -155,15 +160,14 @@ class MapWorldGym(Env):
 
             self.current_room_name = path.relpath(state[0], self.ade_path)
             self.current_room = self.load_image(state[0], self.image_resolution)
-            self.directions = state[1] + f', {self.total_available_actions[4]}.'
+            self.directions = state[1] + f' or {self.total_available_actions[4]}.'
         else:
             # TODO not sure what the correct reward here would be for taking an unavailable action
             # TODO maybe stop penalizing wrong actions
             reward = 0.0
 
         self.state = {'current_room': self.current_room,
-                      'question': self.target_room,
-                      'directions': self.directions}
+                      'text_state': self.directions}
 
         return reward
 
