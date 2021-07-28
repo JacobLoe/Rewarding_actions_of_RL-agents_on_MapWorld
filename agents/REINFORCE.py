@@ -29,6 +29,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.debug('Devive: {}'.format(device))
+
     emsize = model_parameters['embedding_size']  # embedding size of the bert model
     max_sequence_length = model_parameters['max_sequence_length']    # maximum length the text state of the env will get padded to
     output_size = len(available_actions)
@@ -107,8 +108,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
             logger.debug(f'Time for text embedding: {time()-t_ppt}')
 
             t_ga = time()
-            action_probabilities = model(im_tensor,
-                                         embedded_text_tensor)
+            action_probabilities = model(im_tensor, embedded_text_tensor)
             logger.debug(f'Time to get action probs from model: {time()-t_ga}')
             t_ca = time()
             action_probabilities = action_probabilities.cpu().detach().numpy()[0]

@@ -3,7 +3,7 @@ from tqdm import tqdm
 from time import time
 
 
-def run_random_baseline(mapgame, logger, episodes=200000):
+def random_baseline(mapgame, logger, episodes=200000):
     """
 
     Args:

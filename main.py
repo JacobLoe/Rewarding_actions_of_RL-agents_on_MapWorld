@@ -1,4 +1,4 @@
-from agents import run_random_baseline, reinforce
+from agents import random_baseline, reinforce, actor_critic
 from MapWorld import MapWorldGym
 from utils import save_parameters, save_results
 import numpy as np
@@ -20,14 +20,15 @@ logger.propagate = False    # prevents log messages from appearing twice
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", choices=['random', 'rl'], help="")
+    parser.add_argument("model", choices=['random', 'reinf', 'ac'], help="")
     parser.add_argument("--base_path", default="results",
                         help="Path where results, checkpoints and parameters are saved to")
     parser.add_argument("--parameters", default='all_parameters.json'
                         , help="The path to the global parameters json")
     parser.add_argument('--log_level', default='warning', choices=['warning', 'info', 'debug'],
-                        help='set which logging messages to print')
-    parser.add_argument('--save_results', type=bool, default=True, help='')
+                        help='Sets which logging messages to print')
+    parser.add_argument('--save_results', type=bool, default=True,
+                        help='S')
     parser.add_argument('--load_checkpoint', type=bool, default='',
                         help='If set to True, parameters and checkpoints are loaded from args.base_path')
     args = parser.parse_args()
@@ -57,12 +58,12 @@ if __name__ == '__main__':
                       'MapWorld': mw_params}
         if args.save_results:
             save_parameters(parameters, args.base_path)
-        model_return, model_steps, model_hits = run_random_baseline(mwg, logger,
-                                                                    episodes=parameters['training']['num_episodes'])
+        model_return, model_steps, model_hits = random_baseline(mwg, logger,
+                                                                episodes=parameters['training']['num_episodes'])
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
 
-    elif args.model == 'rl':
+    elif args.model == 'reinf':
         # save parameters before running the model
         parameters = {'rl_baseline': parameters['rl_baseline'],
                       'training': parameters['training'],
@@ -77,6 +78,14 @@ if __name__ == '__main__':
                                                           save_results=args.save_results)
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
+
+    elif args.model == 'ac':
+        parameters = {'rl_baseline': parameters['rl_baseline'],
+                      'training': parameters['training'],
+                      'MapWorld': mw_params}
+        actor_critic(mwg,
+                     parameters['rl_baseline'],
+                     parameters['training'])
 
     print('\n-------------------')
     print('Mean return: ', np.mean(model_return))

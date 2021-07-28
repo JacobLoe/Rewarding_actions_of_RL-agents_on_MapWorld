@@ -1,4 +1,4 @@
-from utils import create_figure, create_histogram, create_all_plots, get_data
+from utils import create_all_plots, get_data
 import os
 import argparse
 import glob
