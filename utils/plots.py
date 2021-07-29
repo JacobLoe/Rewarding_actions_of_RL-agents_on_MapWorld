@@ -5,7 +5,7 @@ from scipy.ndimage.filters import uniform_filter1d
 import os
 
 
-def create_histogram(data, title, plot_path, save_plot=True):
+def create_histogram(data, title, plot_path='', save_plot=False):
     """
 
     Args:

@@ -9,6 +9,7 @@ import glob
 import os
 from plots import create_histogram
 import numpy as np
+import pickle
 
 
 def extract_features(model, frame, device):
@@ -74,31 +75,38 @@ if __name__ == '__main__':
 
     base_path = '../../data/ADE20K_2021_17_01/images/ADE/training/'
 
-    path = []
+    image_path = []
+    numpy_path = []
 
     for p in _target_cats:
 
         pa = os.path.join(base_path, p, '**/*.jpg')
+        image_path.extend(glob.glob(pa, recursive=True))
 
-        path.extend(glob.glob(pa, recursive=True))
+        pa = os.path.join(base_path, p, '**/*.npy')
+        numpy_path.extend(glob.glob(pa, recursive=True))
 
-    print(len(path))
+    print('target_cats', len(image_path), len(numpy_path))
 
     for p in _distractor_cats:
 
         pa = os.path.join(base_path, p, '**/*.jpg')
+        image_path.extend(glob.glob(pa, recursive=True))
 
-        path.extend(glob.glob(pa, recursive=True))
+        pa = os.path.join(base_path, p, '**/*.npy')
+        numpy_path.extend(glob.glob(pa, recursive=True))
 
-    print(len(path))
+    print('distractor_cats', len(image_path), len(numpy_path))
 
     for p in _outdoor_cats:
 
         pa = os.path.join(base_path, p, '**/*.jpg')
+        image_path.extend(glob.glob(pa, recursive=True))
 
-        path.extend(glob.glob(pa, recursive=True))
+        pa = os.path.join(base_path, p, '**/*.npy')
+        numpy_path.extend(glob.glob(pa, recursive=True))
 
-    print(len(path))
+    print('outdoor_cats', len(image_path), len(numpy_path))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     inception = models.inception_v3(pretrained=True, aux_logits=False)
@@ -107,20 +115,40 @@ if __name__ == '__main__':
     # print(inception)
     inception.eval()
 
-    dists = []
-    i = Image.open(path[0])
-    f0 = extract_features(inception, i, device)
+    if not len(image_path) == len(numpy_path):
+        dists = []
+        i = Image.open(image_path[0])
+        f0 = extract_features(inception, i, device)
+        print('load images')
+        for p in tqdm(image_path):
+            i = Image.open(p)
+            if len(np.shape(i)) != 3:
+                i = i.convert('RGB')
 
-    for p in tqdm(path):
-        i = Image.open(p)
-        if len(np.shape(i)) != 3:
-            i = i.convert('RGB')
+            f = extract_features(inception, i, device)
+            fp = p[:-4] + '.npy'
+            np.save(fp, f)
 
-        f = extract_features(inception, i, device)
-        d = euclidean_distances(f0, f)
-        dists.append(d[0])
+            d = euclidean_distances(f0, f)
+            dists.append(d[0])
+    else:
+        print('load features')
+        features = []
+        for fp in tqdm(numpy_path):
+            features.append(np.load(fp))
+
+        # TODO save dists with pickle
+        fs = [(f0, f1) for f0 in features for f1 in features]
+
+        print('saved features')
+        dists = []
+        for f0, f1 in tqdm(fs):
+            dists.append(euclidean_distances(f0, f1))
+        with open('utils/distances.pkl', 'wb') as f:
+            pickle.dump(dists, f)
+
+    print(len(dists))
 
     print('min, max, mean', np.min(dists), np.max(dists), np.mean(dists))
-    print(dists[0])
 
     create_histogram(dists, 'dists')
