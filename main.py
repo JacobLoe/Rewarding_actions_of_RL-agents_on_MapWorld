@@ -85,7 +85,10 @@ if __name__ == '__main__':
                       'MapWorld': mw_params}
         actor_critic(mwg,
                      parameters['rl_baseline'],
-                     parameters['training'])
+                     parameters['training'],
+                     base_path=args.base_path,
+                     logger=logger,
+                     save_results=args.save_results)
 
     print('\n-------------------')
     print('Mean return: ', np.mean(model_return))
