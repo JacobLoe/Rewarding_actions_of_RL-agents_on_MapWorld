@@ -174,7 +174,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
                     batch_actions = []
                     batch_states_image = []
                     batch_states_text = []
-                    batch_counter = 1
+                    batch_counter = 0
 
         logger.debug(f'Time for an full episode: {time()-t_pr} \n')
 

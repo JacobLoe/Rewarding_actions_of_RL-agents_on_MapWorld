@@ -5,6 +5,7 @@ from gym import Env
 import cv2
 from os import path
 import json
+from sklearn.metrics.pairwise import euclidean_distances
 
 
 # TODO add option for turning on "dynamic" actions, the agent can only choose actions that are actually available
@@ -47,14 +48,18 @@ class MapWorldGym(Env):
         # They only have proper values after calling the reset function
 
         # current_room is represented by an image as a numpy array
-        # current_room_name the file ame of the image
+        # current_room_name the contains the file name of the image
+        # current_room_path contains the the path to image
         self.current_room = np.array([])
         self.current_room_name = ''
+        self.current_room_path = ''
 
         # the target is represented by a caption generated from the image from a randomly sampled room
         # target_room_name the filename of the image
+        # target_room_path contains the the path to image
         self.target_room = ''
         self.target_room_name = ''
+        self.target_room_path = ''
 
         # directions contains the available actions in the current room as a string (returned as part of the state)
         # 'select_room' is always added at the end
@@ -84,9 +89,11 @@ class MapWorldGym(Env):
         initial_state = self.mw.initial_state   # the initial state is only needed during the reset
 
         self.target_room, self.target_room_name = self.get_caption_for_image(self.mw.target_room)
+        self.target_room_path = self.mw.target_room
 
         self.current_room_name = path.relpath(initial_state[0], self.ade_path)
         self.current_room = self.load_image(initial_state[0], self.image_resolution)
+        self.current_room_path = initial_state[0]
 
         # append action 'select_room' directions returned by MapWorld
         self.directions = initial_state[1] + f' or {self.total_available_actions[4]}.'
@@ -131,17 +138,17 @@ class MapWorldGym(Env):
         Returns: a float, the reward for the action
         """
         if self.current_room_name == self.target_room_name:
-            reward = 1000.0
             self.room_found = 1
         else:
-            reward = -1000.0
             self.room_found = 0
+
+        reward = self.reward_room_selection()
+
         # Terminate the game
         self.done = True
 
         self.state = {'current_room': self.current_room,
                       'text_state': self.directions}
-
         return reward
 
     def move(self, action):
@@ -155,7 +162,8 @@ class MapWorldGym(Env):
         """
         if action in self.available_actions:
             # TODO maybe make step reward linear increasing. Early steps are cheap, later costly
-            reward = -1.0 * self.model_steps    # -10.0 / (1 + np.exp(-self.model_steps + 5))
+            reward = -1.0 * self.model_steps    # linear increasing reward
+            # reward = -10.0 / (1 + np.exp(-self.model_steps + 5)) # reward increasing with sigmoid
             state = self.mw.upd(action)
 
             self.current_room_name = path.relpath(state[0], self.ade_path)
@@ -168,6 +176,33 @@ class MapWorldGym(Env):
 
         self.state = {'current_room': self.current_room,
                       'text_state': self.directions}
+
+        return reward
+
+    def reward_room_selection(self):
+        """
+        Compute the euclidean distance between the feature vectors of two images.
+
+        Returns:
+                a float, the reward for selecting a room
+        """
+        # TODO how to cite ?
+
+        feature0_path = self.target_room_path[:-4] + '.npy'
+        feature1_path = self.current_room_path[:-4] + '.npy'
+
+        feature0 = np.load(feature0_path)
+        feature1 = np.load(feature1_path)
+
+        # distances follow a gaussian distribution
+        distance = euclidean_distances(feature0, feature1)[0]
+
+        # TODO check which normalization to use
+        # normalize distance, subtract mean, divide by maximum
+        # additionally the sign is switched to map the maximum value to the maximum reward
+        normalized_distance = -(distance-16)/31     # range -0.5 to 0.5, mean is 0
+
+        reward = 2000.0 * normalized_distance     # range -1000 to 1000, mean is 0
 
         return reward
 

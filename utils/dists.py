@@ -9,11 +9,26 @@ import glob
 import os
 from plots import create_histogram
 import numpy as np
+import pickle
+import random
+
+
+def load_inception():
+    """
+    Loads the InceptionV3 image classification model with pytorch.
+    The last two layers (dropout and fully-connected) are removed.
+    Returns:
+            pytorch InceptionV3 model
+    """
+    inception = models.inception_v3(pretrained=True, aux_logits=False)
+    inception = nn.Sequential(*list(inception.children())[:-2]).to(device)
+    inception.eval()
+    return inception
 
 
 def extract_features(model, frame, device):
     """
-
+    Extracts the features
     Args:
         model:
         frame:
@@ -38,7 +53,13 @@ def extract_features(model, frame, device):
 
 
 if __name__ == '__main__':
-
+    # TODO move code into main function that can be executed by an top-level script
+    '''
+    The script loads all .jpg-images from the categories used by MapWorld and extracts features for each.
+    The features are saved as .npy-files in the same folders. 
+    Additionally the euclidean distances between a random sample of 1000 features and all other features are computed.
+    A histogram showing the distribution of the distances is created.
+    '''
     _target_cats = ['home_or_hotel/bathroom', 'home_or_hotel/bedroom', 'home_or_hotel/kitchen',
                     'home_or_hotel/basement', 'home_or_hotel/nursery', 'home_or_hotel/attic', 'home_or_hotel/childs_room',
                     'home_or_hotel/playroom', 'home_or_hotel/dining_room', 'home_or_hotel/home_office',
@@ -74,53 +95,80 @@ if __name__ == '__main__':
 
     base_path = '../../data/ADE20K_2021_17_01/images/ADE/training/'
 
-    path = []
+    image_path = []
+    numpy_path = []
 
     for p in _target_cats:
 
         pa = os.path.join(base_path, p, '**/*.jpg')
+        image_path.extend(glob.glob(pa, recursive=True))
 
-        path.extend(glob.glob(pa, recursive=True))
+        pa = os.path.join(base_path, p, '**/*.npy')
+        numpy_path.extend(glob.glob(pa, recursive=True))
 
-    print(len(path))
+    print('target_cats', len(image_path), len(numpy_path))
 
     for p in _distractor_cats:
 
         pa = os.path.join(base_path, p, '**/*.jpg')
+        image_path.extend(glob.glob(pa, recursive=True))
 
-        path.extend(glob.glob(pa, recursive=True))
+        pa = os.path.join(base_path, p, '**/*.npy')
+        numpy_path.extend(glob.glob(pa, recursive=True))
 
-    print(len(path))
+    print('distractor_cats', len(image_path), len(numpy_path))
 
     for p in _outdoor_cats:
 
         pa = os.path.join(base_path, p, '**/*.jpg')
+        image_path.extend(glob.glob(pa, recursive=True))
 
-        path.extend(glob.glob(pa, recursive=True))
+        pa = os.path.join(base_path, p, '**/*.npy')
+        numpy_path.extend(glob.glob(pa, recursive=True))
 
-    print(len(path))
+    print('outdoor_cats', len(image_path), len(numpy_path))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    inception = models.inception_v3(pretrained=True, aux_logits=False)
-    # print(inception, '\n')
-    inception = nn.Sequential(*list(inception.children())[:-2]).to(device)
-    # print(inception)
-    inception.eval()
+    inception = load_inception()
 
-    dists = []
-    i = Image.open(path[0])
-    f0 = extract_features(inception, i, device)
+    if not len(image_path) == len(numpy_path):
+        dists = []
+        i = Image.open(image_path[0])
+        f0 = extract_features(inception, i, device)
+        print('load images')
+        for p in tqdm(image_path):
+            i = Image.open(p)
+            if len(np.shape(i)) != 3:
+                i = i.convert('RGB')
 
-    for p in tqdm(path):
-        i = Image.open(p)
-        if len(np.shape(i)) != 3:
-            i = i.convert('RGB')
+            f = extract_features(inception, i, device)
+            fp = p[:-4] + '.npy'
+            np.save(fp, f)
 
-        f = extract_features(inception, i, device)
-        d = euclidean_distances(f0, f)
-        dists.append(d[0])
+            d = euclidean_distances(f0, f)
+            dists.append(d[0])
+    else:
+        print('load features')
+        features = []
+        for fp in tqdm(numpy_path):
+            features.append(np.load(fp))
+
+        # get a random sample
+        # features_sample = random.sample(features, 1000)
+        # print(np.shape(features_sample), np.shape(features))
+
+        # fs = [(f0, f1) for f0 in features for f1 in features]
+        dists = []
+        for i, f0 in tqdm(enumerate(features)):
+            d = [euclidean_distances(f0, f)[0] for f in features]
+            d.extend(d)
+
+    #     #TODO visualize normalized dists
+    #     for f0, f1 in tqdm(fs):
+    #         dists.append(euclidean_distances(f0, f1)[0])
+        with open('utils/distances.pkl', 'wb') as f:
+            pickle.dump(dists, f)
 
     print('min, max, mean', np.min(dists), np.max(dists), np.mean(dists))
-    print(dists[0])
-
-    create_histogram(dists, 'dists')
+    title = f'Distances for 1000 features to every other feature. Mean: {np.mean(dists)}, Max: {np.max(dists)}'
+    create_histogram(dists, title, plot_path='utils/dists.png', save_plot=True)

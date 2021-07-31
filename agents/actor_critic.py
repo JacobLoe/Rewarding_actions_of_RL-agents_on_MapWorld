@@ -12,7 +12,7 @@ from sentence_transformers import SentenceTransformer
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
 
 
-def actor_critic(mwg, model_parameters, training_parameters):
+def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, save_results):
     SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
     running_reward = 10
@@ -20,7 +20,6 @@ def actor_critic(mwg, model_parameters, training_parameters):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     available_actions = mwg.total_available_actions
-    action_space = np.arange(len(available_actions))
 
     emsize = model_parameters['embedding_size']  # embedding size of the bert model
     max_sequence_length = model_parameters['max_sequence_length']    # maximum length the text state of the env will get padded to
@@ -51,18 +50,24 @@ def actor_critic(mwg, model_parameters, training_parameters):
 
     eps = np.finfo(np.float32).eps.item()
 
+    total_rewards = []
+    total_steps = []
+    hits = []
+
+    batch_rewards = []
+    batch_actions = []
+    batch_counter = 0
+
     for episode in tqdm(range(starting_episode, num_episodes)):
 
         # reset environment and episode reward
         state = mwg.reset()
-        ep_reward = 0
-
-        steps = 0
-
-        done = False
 
         saved_actions = []
         rewards = []
+
+        done = False
+        steps = 0
 
         while not done and steps < max_steps:
 
@@ -75,76 +80,91 @@ def actor_critic(mwg, model_parameters, training_parameters):
             embedded_text_tensor = torch.FloatTensor([embeddings]).to(device)
 
             action_probabilities = action_model(im_tensor, embedded_text_tensor)
-            print(action_probabilities)
+            logger.debug('action_probabilities',action_probabilities)
             state_value = value_model(im_tensor, embedded_text_tensor)
             # action_probabilities = action_probabilities.cpu().detach().numpy()[0]
 
             # create a categorical distribution over the list of probabilities of actions
             m = Categorical(action_probabilities)
-            print(m)
             # and sample an action using the distribution
             action = m.sample()
-            print(action)
-            print(type(SavedAction), SavedAction)
+            logger.debug('SavedAction', type(SavedAction), SavedAction)
 
             # save to action buffer
             saved_actions.append(SavedAction(m.log_prob(action), state_value))
 
             # take the action
-            state, reward, done, hits = mwg.step(action.item())
+            state, reward, done, room_found = mwg.step(action.item())
 
             rewards.append(reward)
-            ep_reward += reward
-            if done:
-                break
 
-        # TODO ignore for now
-        # update cumulative reward
-        # running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
+            steps += 1
 
-        # perform backprop
+            if done or steps >= max_steps:
+                # save the results for the episode
+                total_rewards.append(mwg.model_return)
+                total_steps.append(steps)
+                hits.append(room_found)
 
-        R = 0
-        policy_losses = []  # list to save actor (policy) loss
-        value_losses = []  # list to save critic (value) loss
-        returns = []  # list to save the true values
+                # when a episode is finished, collect experience
+                batch_rewards.extend(rewards)
+                batch_actions.extend(saved_actions)
+                batch_counter += 1
 
-        # calculate the true value using rewards returned from the environment
-        for r in rewards[::-1]:
-            # calculate the discounted value
-            R = r + gamma * R
-            returns.insert(0, R)
+                if batch_counter == batch_size:
+                    print('---------training---------')
 
-        returns = torch.tensor(returns).to(device)
-        returns = (returns - returns.mean()) / (returns.std() + eps)
+                    # TODO ignore for now
+                    # update cumulative reward
+                    # running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
 
-        for (log_prob, value), R in zip(saved_actions, returns):
-            advantage = R - value.item()
+                    # perform backprop
+                    R = 0
+                    policy_losses = []  # list to save actor (policy) loss
+                    value_losses = []  # list to save critic (value) loss
+                    returns = []  # list to save the true values
 
-            # calculate actor (policy) loss
-            policy_losses.append(-log_prob * advantage)
+                    # calculate the true value using rewards returned from the environment
+                    for r in batch_rewards[::-1]:
+                        # calculate the discounted value
+                        R = r + gamma * R
+                        returns.insert(0, R)
 
-            # calculate critic (value) loss using L1 smooth loss
-            value_losses.append(F.smooth_l1_loss(value, torch.tensor([R]).to(device)))
+                    returns = torch.tensor(returns).to(device)
+                    returns = (returns - returns.mean()) / (returns.std() + eps)
 
-        # reset gradients
-        action_optimizer.zero_grad()
-        value_optimizer.zero_grad()
-        # sum up all the values of policy_losses and value_losses
-        action_loss = torch.stack(policy_losses).sum()
-        value_loss = torch.stack(value_losses).sum()
+                    for (log_prob, value), R in zip(batch_actions, returns):
+                        advantage = R - value.item()
 
-        # perform backprop
-        action_loss.backward()
-        value_loss.backward()
-        action_optimizer.step()
-        value_optimizer.step()
+                        # calculate actor (policy) loss
+                        policy_losses.append(-log_prob * advantage)
 
-        # log results
-        # if episode % args.log_interval == 0:
-        #     print('Episode {}\tLast reward: {:.2f}\tAverage reward: {:.2f}'.format(
-        #           episode, ep_reward, running_reward))
+                        # calculate critic (value) loss using L1 smooth loss
+                        value_losses.append(F.smooth_l1_loss(value, torch.tensor([R]).to(device)))
 
+                    # reset gradients
+                    action_optimizer.zero_grad()
+                    value_optimizer.zero_grad()
+                    # sum up all the values of policy_losses and value_losses
+                    action_loss = torch.stack(policy_losses).sum()
+                    value_loss = torch.stack(value_losses).sum()
+
+                    # perform backprop
+                    action_loss.backward()
+                    value_loss.backward()
+                    action_optimizer.step()
+                    value_optimizer.step()
+
+                    batch_rewards = []
+                    batch_actions = []
+                    batch_counter = 0
+
+                    # log results
+                    # if episode % args.log_interval == 0:
+                    #     print('Episode {}\tLast reward: {:.2f}\tAverage reward: {:.2f}'.format(
+                    #           episode, ep_reward, running_reward))
+
+    return total_rewards, total_steps, hits
 
 class ActionModel(nn.Module):
     def __init__(self, emsize, max_sequence_length, output_size, num_layers):
