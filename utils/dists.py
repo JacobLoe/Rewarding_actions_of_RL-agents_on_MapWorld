@@ -10,11 +10,25 @@ import os
 from plots import create_histogram
 import numpy as np
 import pickle
+import random
+
+
+def load_inception():
+    """
+    Loads the InceptionV3 image classification model with pytorch.
+    The last two layers (dropout and fully-connected) are removed.
+    Returns:
+            pytorch InceptionV3 model
+    """
+    inception = models.inception_v3(pretrained=True, aux_logits=False)
+    inception = nn.Sequential(*list(inception.children())[:-2]).to(device)
+    inception.eval()
+    return inception
 
 
 def extract_features(model, frame, device):
     """
-
+    Extracts the features
     Args:
         model:
         frame:
@@ -39,7 +53,13 @@ def extract_features(model, frame, device):
 
 
 if __name__ == '__main__':
-
+    # TODO move code into main function that can be executed by an top-level script
+    '''
+    The script loads all .jpg-images from the categories used by MapWorld and extracts features for each.
+    The features are saved as .npy-files in the same folders. 
+    Additionally the euclidean distances between a random sample of 1000 features and all other features are computed.
+    A histogram showing the distribution of the distances is created.
+    '''
     _target_cats = ['home_or_hotel/bathroom', 'home_or_hotel/bedroom', 'home_or_hotel/kitchen',
                     'home_or_hotel/basement', 'home_or_hotel/nursery', 'home_or_hotel/attic', 'home_or_hotel/childs_room',
                     'home_or_hotel/playroom', 'home_or_hotel/dining_room', 'home_or_hotel/home_office',
@@ -109,11 +129,7 @@ if __name__ == '__main__':
     print('outdoor_cats', len(image_path), len(numpy_path))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    inception = models.inception_v3(pretrained=True, aux_logits=False)
-    # print(inception, '\n')
-    inception = nn.Sequential(*list(inception.children())[:-2]).to(device)
-    # print(inception)
-    inception.eval()
+    inception = load_inception()
 
     if not len(image_path) == len(numpy_path):
         dists = []
@@ -137,18 +153,22 @@ if __name__ == '__main__':
         for fp in tqdm(numpy_path):
             features.append(np.load(fp))
 
-        # TODO save dists with pickle
-        fs = [(f0, f1) for f0 in features for f1 in features]
+        # get a random sample
+        # features_sample = random.sample(features, 1000)
+        # print(np.shape(features_sample), np.shape(features))
 
-        print('saved features')
+        # fs = [(f0, f1) for f0 in features for f1 in features]
         dists = []
-        for f0, f1 in tqdm(fs):
-            dists.append(euclidean_distances(f0, f1))
+        for i, f0 in tqdm(enumerate(features)):
+            d = [euclidean_distances(f0, f)[0] for f in features]
+            d.extend(d)
+
+    #     #TODO visualize normalized dists
+    #     for f0, f1 in tqdm(fs):
+    #         dists.append(euclidean_distances(f0, f1)[0])
         with open('utils/distances.pkl', 'wb') as f:
             pickle.dump(dists, f)
 
-    print(len(dists))
-
     print('min, max, mean', np.min(dists), np.max(dists), np.mean(dists))
-
-    create_histogram(dists, 'dists')
+    title = f'Distances for 1000 features to every other feature. Mean: {np.mean(dists)}, Max: {np.max(dists)}'
+    create_histogram(dists, title, plot_path='utils/dists.png', save_plot=True)

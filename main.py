@@ -20,7 +20,7 @@ logger.propagate = False    # prevents log messages from appearing twice
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", choices=['random', 'reinf', 'ac'], help="")
+    parser.add_argument("model", choices=['random', 'reinforce', 'ac'], help="")
     parser.add_argument("--base_path", default="results",
                         help="Path where results, checkpoints and parameters are saved to")
     parser.add_argument("--parameters", default='all_parameters.json'
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
 
-    elif args.model == 'reinf':
+    elif args.model == 'reinforce':
         # save parameters before running the model
         parameters = {'rl_baseline': parameters['rl_baseline'],
                       'training': parameters['training'],

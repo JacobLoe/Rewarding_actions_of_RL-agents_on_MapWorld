@@ -21,6 +21,8 @@ def create_histogram(data, title, plot_path='', save_plot=False):
     fig = px.histogram(df, title=title)
     if save_plot:
         fig.write_image(plot_path)
+        html_path = plot_path[:-4] + '.html'
+        fig.write_html(html_path)
     else:
         fig.show()
 

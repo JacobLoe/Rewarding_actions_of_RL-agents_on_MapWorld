@@ -4,3 +4,4 @@ MapWorld/.ipynb_checkpoints/
 im2txt/checkpoints/
 .data
 *.pt
+utils/dists.html
