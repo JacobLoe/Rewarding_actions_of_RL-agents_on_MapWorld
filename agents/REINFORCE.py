@@ -134,8 +134,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
                 hits.append(room_found)
 
                 # when a episode is finished, collect experience
-                batch_rewards.extend(discount_rewards(
-                    rewards, gamma))
+                batch_rewards.extend(discount_rewards(rewards, gamma))
                 batch_states_image.extend(states_image)
                 batch_states_text.extend(states_text)
                 batch_actions.extend(actions)
@@ -143,7 +142,6 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
                 logger.debug(f'Time for saving batch: {time()-t_srb}')
 
                 if batch_counter == batch_size:
-                    print('---------training---------')
                     model.train()
                     optimizer.zero_grad()
 
@@ -199,8 +197,7 @@ def discount_rewards(rewards, gamma=0.99):
     Returns:
 
     """
-    r = np.array([gamma**i * rewards[i]
-        for i in range(len(rewards))])
+    r = np.array([gamma**i * rewards[i] for i in range(len(rewards))])
     # Reverse the array direction for cumsum and then
     # revert back to the original order
     r = r[::-1].cumsum()[::-1]

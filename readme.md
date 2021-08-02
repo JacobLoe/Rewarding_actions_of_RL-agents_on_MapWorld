@@ -8,3 +8,10 @@ Create and activate conda environment:
 conda env create -f environment.yml
 conda activate hrl-tb
 ```
+
+Before running the code for two scripts have to run first:
+
+```
+python localized_narratives/localized_narratives.py
+python utils/dists.py
+```

@@ -124,6 +124,7 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
                     value_losses = []  # list to save critic (value) loss
                     returns = []  # list to save the true values
 
+                    # TODO check whether this and discount_rewards amount to the same operation
                     # calculate the true value using rewards returned from the environment
                     for r in batch_rewards[::-1]:
                         # calculate the discounted value
@@ -165,6 +166,7 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
                     #           episode, ep_reward, running_reward))
 
     return total_rewards, total_steps, hits
+
 
 class ActionModel(nn.Module):
     def __init__(self, emsize, max_sequence_length, output_size, num_layers):

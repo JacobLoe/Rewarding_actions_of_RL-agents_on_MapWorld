@@ -195,15 +195,14 @@ class MapWorldGym(Env):
         feature1 = np.load(feature1_path)
 
         # distances follow a gaussian distribution
-        distance = euclidean_distances(feature0, feature1)[0]
-
+        distance = euclidean_distances(feature0, feature1)[0][0]
         # TODO check which normalization to use
         # normalize distance, subtract mean, divide by maximum
         # additionally the sign is switched to map the maximum value to the maximum reward
-        normalized_distance = -(distance-16)/31     # range -0.5 to 0.5, mean is 0
+        normalized_distance = -(distance-15.956363)/30.135202     # range -0.5 to 0.5, mean is 0
 
+        # 1000 when the rooms are the exact same,
         reward = 2000.0 * normalized_distance     # range -1000 to 1000, mean is 0
-
         return reward
 
     def get_caption_for_image(self, image_path):

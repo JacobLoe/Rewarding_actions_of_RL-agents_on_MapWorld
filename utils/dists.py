@@ -161,7 +161,7 @@ if __name__ == '__main__':
         dists = []
         for i, f0 in tqdm(enumerate(features)):
             d = [euclidean_distances(f0, f)[0] for f in features]
-            d.extend(d)
+            dists.extend(d)
 
     #     #TODO visualize normalized dists
     #     for f0, f1 in tqdm(fs):
