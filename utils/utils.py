@@ -54,6 +54,6 @@ def get_data(base_path):
         parameters = json.load(fp)
     num_episodes = parameters['training']['num_episodes']
 
-    plot_base_path = os.path.join(os.path.split(base_path)[0], 'plots')
+    plot_base_path = os.path.join(base_path, 'plots')
 
     return model_return, model_steps, model_hits, num_episodes, plot_base_path
