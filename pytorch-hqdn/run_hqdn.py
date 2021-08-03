@@ -18,16 +18,14 @@ if __name__ == '__main__':
 
     optimizer_spec = OptimizerSpec(
         constructor=optim.RMSprop,
-        kwargs=dict(lr=LEARNING_RATE, alpha=ALPHA, eps=EPS),
-    )
+        kwargs=dict(lr=LEARNING_RATE, alpha=ALPHA, eps=EPS))
 
     exploration_schedule = LinearSchedule(50000, 0.1, 1)
 
     agent = hDQN(
         optimizer_spec=optimizer_spec,
         replay_memory_size=REPLAY_MEMORY_SIZE,
-        batch_size=BATCH_SIZE,
-    )
+        batch_size=BATCH_SIZE)
 
     env = StochasticMDPEnv()
 
@@ -36,8 +34,7 @@ if __name__ == '__main__':
         agent=agent,
         num_episodes=NUM_EPISODES,
         exploration_schedule=exploration_schedule,
-        gamma=GAMMA,
-    )
+        gamma=GAMMA,)
 
     # plot_episode_stats(stats)
     # plot_visited_states(visits, NUM_EPISODES)

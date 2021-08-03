@@ -90,8 +90,6 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
 
         done = False
         steps = 0
-        # loop until an episode is finished or 30 steps have been done
-        # 30 steps is worse than a agent with random actions
         while not done and steps < max_steps:
 
             t_pp = time()

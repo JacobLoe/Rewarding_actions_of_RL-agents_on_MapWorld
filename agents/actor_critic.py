@@ -88,7 +88,6 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
             m = Categorical(action_probabilities)
             # and sample an action using the distribution
             action = m.sample()
-            logger.debug('SavedAction', type(SavedAction), SavedAction)
 
             # save to action buffer
             saved_actions.append(SavedAction(m.log_prob(action), state_value))

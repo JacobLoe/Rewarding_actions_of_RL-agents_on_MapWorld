@@ -37,6 +37,7 @@ if __name__ == '__main__':
     log_level = {'warning': logging.WARNING, 'info': logging.INFO, 'debug': logging.DEBUG}
     logging.basicConfig(level=log_level[args.log_level])
 
+    # load old parameters if a model is run from a checkpoint
     if not args.load_checkpoint:
         with open(args.parameters, 'r') as fp:
             parameters = json.load(fp)
@@ -53,13 +54,15 @@ if __name__ == '__main__':
                       image_resolution=(mw_params['image_width'], mw_params['image_height']),
                       captions=mw_params['captions'])
 
+    # run the chosen model on MapWorld with the loaded parameters
     if args.model == 'random':
         parameters = {'training': parameters['training'],
                       'MapWorld': mw_params}
         if args.save_results:
             save_parameters(parameters, args.base_path)
         model_return, model_steps, model_hits = random_baseline(mwg, logger,
-                                                                episodes=parameters['training']['num_episodes'])
+                                                                episodes=parameters['training']['num_episodes'],
+                                                                max_steps=parameters['training']['num_episodes'])
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
 

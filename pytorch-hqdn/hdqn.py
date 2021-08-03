@@ -14,29 +14,27 @@ from utils import plotting
 USE_CUDA = torch.cuda.is_available()
 dtype = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
+
 class Variable(autograd.Variable):
     def __init__(self, data, *args, **kwargs):
         if USE_CUDA:
             data = data.cuda()
         super(Variable, self).__init__(data, *args, **kwargs)
 
+
 def one_hot_state(state):
     vector = np.zeros(6)
     vector[state-1] = 1.0
     return np.expand_dims(vector, axis=0)
+
 
 def one_hot_goal(goal):
     vector = np.zeros(6)
     vector[goal-1] = 1.0
     return np.expand_dims(vector, axis=0)
 
-def hdqn_learning(
-    env,
-    agent,
-    num_episodes,
-    exploration_schedule,
-    gamma=1.0,
-    ):
+
+def hdqn_learning(env, agent, num_episodes, exploration_schedule, gamma=1.0):
 
     """The h-DQN learning algorithm.
     All schedules are w.r.t. total number of steps taken in the environment.
@@ -49,7 +47,7 @@ def hdqn_learning(
     num_episodes:
         Number (can be divided by 1000) of episodes to run for. Ex: 12000
     exploration_schedule: Schedule (defined in utils.schedule)
-        schedule for probability of chosing random action.
+        schedule for probability of choosing random action.
     gamma: float
         Discount Factor
     """
@@ -87,11 +85,11 @@ def hdqn_learning(
                     total_timestep += 1
                     episode_length += 1
                     ctrl_timestep[goal] += 1
-                    # Get annealing exploration rate (epislon) from exploration_schedule
+                    # Get annealing exploration rate (epsilon) from exploration_schedule
                     ctrl_epsilon = exploration_schedule.value(total_timestep)
                     joint_state_goal = np.concatenate([encoded_current_state, encoded_goal], axis=1)
                     action = agent.select_action(joint_state_goal, ctrl_epsilon)[0]
-                    ### Step the env and store the transition
+                    # Step the env and store the transition
                     next_state, extrinsic_reward, done, _ = env.step(action)
                     # Update statistics
                     stats.episode_rewards[i_thousand_episode*1000 + i_episode] += extrinsic_reward
