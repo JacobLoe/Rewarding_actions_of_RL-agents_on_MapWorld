@@ -3,7 +3,6 @@ from collections import namedtuple, deque
 from typing import Tuple
 from torch.utils.data.dataset import IterableDataset
 
-
 # Named tuple for storing experience steps gathered in training
 Experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'done', 'new_state'])
 

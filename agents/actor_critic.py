@@ -6,35 +6,49 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
-
+from torch.nn import DataParallel
+from torch.utils.data import DataLoader
 from sentence_transformers import SentenceTransformer
 
+from utils.ReplayBuffer import ReplayBuffer, RLDataset
+
+
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
-
-
 def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, save_results):
     SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
     running_reward = 10
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+    # assign all available gpu devices to pytorch
+    device_count = torch.cuda.device_count()
+    print(device_count)
+    d = 'cuda:'
+    for i in range(device_count):
+        d = d + f'{i}'
+    device = torch.device(d if torch.cuda.is_available() else "cpu")
+    print(device)
     available_actions = mwg.total_available_actions
 
     emsize = model_parameters['embedding_size']  # embedding size of the bert model
     max_sequence_length = model_parameters['max_sequence_length']    # maximum length the text state of the env will get padded to
     output_size = len(available_actions)
     num_layers = model_parameters['num_layers']
-    action_model = ActionModel(emsize,
+    action_model = DataParallel(ActionModel(emsize,
+                                max_sequence_length,
+                                output_size,
+                                num_layers)).to(device)
+
+    value_model = DataParallel(ValueModel(emsize,
                                max_sequence_length,
-                               output_size,
-                               num_layers).to(device)
+                               1,
+                               num_layers)).to(device)
 
-    value_model = ValueModel(emsize,
-                             max_sequence_length,
-                             1,
-                             num_layers).to(device)
+    buffer = ReplayBuffer(training_parameters['replay_size'])
+    # Named tuple for storing experience steps gathered during training
+    Experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'done', 'new_state'])
 
+    print(action_model.device_ids, value_model.device_ids)
+    # print(daeada)
     lr = training_parameters['learning_rate']
     num_episodes = training_parameters['num_episodes']
     batch_size = training_parameters['batch_size']
@@ -73,15 +87,17 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
 
             im = state['current_room']
             im = np.reshape(im, (np.shape(im)[2], np.shape(im)[1], np.shape(im)[0]))
-            im_tensor = torch.FloatTensor([im]).to(device)
+            im_tensor = torch.FloatTensor([im])
 
             text = state['text_state']
             embeddings = em_model.encode(text)
-            embedded_text_tensor = torch.FloatTensor([embeddings]).to(device)
+            embedded_text_tensor = torch.FloatTensor([embeddings])
 
-            action_probabilities = action_model(im_tensor, embedded_text_tensor)
-            logger.debug('action_probabilities',action_probabilities)
-            state_value = value_model(im_tensor, embedded_text_tensor)
+            action_probabilities = action_model(im_tensor.to(device),
+                                                embedded_text_tensor.to(device))
+            logger.debug('action_probabilities', action_probabilities)
+            state_value = value_model(im_tensor.to(device),
+                                      embedded_text_tensor.to(device))
             # action_probabilities = action_probabilities.cpu().detach().numpy()[0]
 
             # create a categorical distribution over the list of probabilities of actions
@@ -94,6 +110,9 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
 
             # take the action
             state, reward, done, room_found = mwg.step(action.item())
+
+            exp = Experience([], action, reward, done, [])
+            buffer.append(exp)
 
             rewards.append(reward)
 
@@ -111,6 +130,12 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
                 batch_counter += 1
 
                 if batch_counter == batch_size:
+                    # dataset = RLDataset(buffer, training_parameters['max_steps'])
+                    # dataloader = DataLoader(dataset=dataset,
+                    #                         batch_size=training_parameters['batch_size'])
+                    # for d in dataloader:
+                    #     print(d)
+                    # print(sdsadsd)
                     print('---------training---------')
 
                     # TODO ignore for now
