@@ -24,20 +24,19 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
 
     """
     # TODO include flag to turn on/off training, so model doesn't train on eval data
+
     available_actions = mwg.total_available_actions
+    # TODO switch to gym action space
     action_space = np.arange(len(available_actions))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.debug('Devive: {}'.format(device))
 
-    emsize = model_parameters['embedding_size']  # embedding size of the bert model
-    max_sequence_length = model_parameters['max_sequence_length']    # maximum length the text state of the env will get padded to
     output_size = len(available_actions)
-    num_layers = model_parameters['num_layers']
-    model = RLBaseline(emsize,
-                       max_sequence_length,
+    model = RLBaseline(model_parameters['embedding_size'],
+                       model_parameters['max_sequence_length'],
                        output_size,
-                       num_layers).to(device)
+                       model_parameters['num_layers']).to(device)
 
     lr = training_parameters['learning_rate']
     num_episodes = training_parameters['num_episodes']
@@ -79,9 +78,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
 
     for episode in tqdm(range(starting_episode, num_episodes)):
 
-        t_pr = time()
         s_0 = mwg.reset()
-        logger.debug(f'Time for env reset: {time()-t_pr}')
 
         states_image = []
         states_text = []
@@ -90,34 +87,24 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
 
         done = False
         steps = 0
-        # loop until an episode is finished or 30 steps have been done
-        # 30 steps is worse than a agent with random actions
         while not done and steps < max_steps:
 
-            t_pp = time()
             # preprocess state (image and text)
             im = s_0['current_room']
             im = np.reshape(im, (np.shape(im)[2], np.shape(im)[1], np.shape(im)[0]))
             im_tensor = torch.FloatTensor([im]).to(device)
-            logger.debug(f'Time for image preprocessing: {time()-t_pp}')
 
-            t_ppt = time()
+            print('im_tensor', im_tensor.size())
+
             text = s_0['text_state']
             embeddings = em_model.encode(text)
             embedded_text_tensor = torch.FloatTensor([embeddings]).to(device)
-            logger.debug(f'Time for text embedding: {time()-t_ppt}')
 
-            t_ga = time()
             action_probabilities = model(im_tensor, embedded_text_tensor)
-            logger.debug(f'Time to get action probs from model: {time()-t_ga}')
-            t_ca = time()
             action_probabilities = action_probabilities.cpu().detach().numpy()[0]
             action = np.random.choice(action_space, p=action_probabilities)
-            logger.debug(f'Time to choose action: {time()-t_ca}')
 
-            t_s = time()
             s_1, reward, done, room_found = mwg.step(action)
-            logger.debug(f'Time for env step: {time()-t_s}')
 
             states_image.append(im)
             states_text.append(embeddings)
@@ -127,7 +114,6 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
             s_0 = s_1
             steps += 1
             if done or steps >= max_steps:
-                t_srb = time()
                 # save the results for the episode
                 total_rewards.append(mwg.model_return)
                 total_steps.append(steps)
@@ -139,30 +125,24 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
                 batch_states_text.extend(states_text)
                 batch_actions.extend(actions)
                 batch_counter += 1
-                logger.debug(f'Time for saving batch: {time()-t_srb}')
 
                 if batch_counter == batch_size:
                     model.train()
                     optimizer.zero_grad()
 
-                    t_ctt = time()
                     # cast the batch to tensors and onto the GPU
                     im_tensor = torch.FloatTensor(batch_states_image).to(device)
                     inputs_tensor = torch.FloatTensor(batch_states_text).to(device)
                     reward_tensor = torch.FloatTensor(batch_rewards).to(device)
                     action_tensor = torch.LongTensor(batch_actions).to(device)
-                    logger.debug(f'Time to cast batches to tensors: {time()-t_ctt}')
+                    print('im_tensor', im_tensor.size())
 
-                    t_lp = time()
                     logprob = torch.log(model(im_tensor, inputs_tensor))
                     selected_logprobs = reward_tensor * torch.gather(logprob, 1, action_tensor.unsqueeze(1)).squeeze()
                     loss = -selected_logprobs.mean()
-                    logger.debug(f'Time for loss calc: {time()-t_lp}')
 
-                    t_bp = time()
                     # Calculate gradients
                     loss.backward()
-                    logger.debug(f'Time for backprop {time()-t_bp}')
 
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
                     # Apply gradients
@@ -173,8 +153,6 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
                     batch_states_image = []
                     batch_states_text = []
                     batch_counter = 0
-
-        logger.debug(f'Time for an full episode: {time()-t_pr} \n')
 
         # save the progress of the training every checkpoint_frequency episodes
         if episode % checkpoint_frequency == 0 and save_results:
@@ -207,6 +185,9 @@ def discount_rewards(rewards, gamma=0.99):
 class RLBaseline(nn.Module):
     def __init__(self, emsize, max_sequence_length, output_size, num_layers):
         super(RLBaseline, self).__init__()
+
+        # TODO replace cnn and lstm with pretrained pytorch models
+
         # TODO with the sentence transformer max_sequence_length is not a thing anymore
         # TODO maybe replace it with something else (emsize, etc)
         # TODO https://arxiv.org/pdf/1902.07742.pdf

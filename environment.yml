@@ -8,6 +8,7 @@ dependencies:
   - cudatoolkit=10.1
   - pytorch
   - torchvision
+  - pytorch-lightning
   - matplotlib
   - networkx=2.2
   - pip=21.0.1

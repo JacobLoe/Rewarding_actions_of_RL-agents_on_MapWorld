@@ -5,3 +5,4 @@ im2txt/checkpoints/
 .data
 *.pt
 utils/dists.html
+lightning_logs

@@ -12,7 +12,19 @@
         "room_types": 2,
         "captions": "localized_narratives/ade20k_train_captions.json"
     },
-    "rl_baseline": {
+    "REINFORCE": {
+        "embedding_model": "paraphrase-MiniLM-L6-v2",
+        "embedding_size": 384,
+        "max_sequence_length": 32,
+        "num_layers": 2
+    },
+    "actor_critic": {
+        "embedding_model": "paraphrase-MiniLM-L6-v2",
+        "embedding_size": 384,
+        "max_sequence_length": 32,
+        "num_layers": 2
+    },
+    "dqn": {
         "embedding_model": "paraphrase-MiniLM-L6-v2",
         "embedding_size": 384,
         "max_sequence_length": 32,
@@ -24,6 +36,12 @@
         "learning_rate": 0.0005,
         "max_steps": 50,
         "num_episodes": 200000,
-        "checkpoint_frequency": 100
+        "checkpoint_frequency": 100,
+        "replay_size": 1000,
+        "warm_start_steps": 1000,
+        "eps_start": 1.0,
+        "eps_end": 0.01,
+        "eps_last_frame": 1000,
+        "sync_rate": 10
     }
 }
