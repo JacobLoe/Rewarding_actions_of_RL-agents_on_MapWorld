@@ -1,4 +1,5 @@
 from agents import random_baseline, reinforce, actor_critic
+from agents.dqn import main
 from MapWorld import MapWorldGym
 from utils import save_parameters, save_results
 import numpy as np
@@ -20,7 +21,7 @@ logger.propagate = False    # prevents log messages from appearing twice
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", choices=['random', 'reinforce', 'ac'], help="")
+    parser.add_argument("model", choices=['random', 'reinforce', 'ac', 'dqn'], help="")
     parser.add_argument("--base_path", default="results",
                         help="Path where results, checkpoints and parameters are saved to")
     parser.add_argument("--parameters", default='all_parameters.json'
@@ -68,13 +69,13 @@ if __name__ == '__main__':
 
     elif args.model == 'reinforce':
         # save parameters before running the model
-        parameters = {'rl_baseline': parameters['rl_baseline'],
+        parameters = {'REINFORCE': parameters['REINFORCE'],
                       'training': parameters['training'],
                       'MapWorld': mw_params}
         if args.save_results:
             save_parameters(parameters, args.base_path)
         model_return, model_steps, model_hits = reinforce(mwg,
-                                                          parameters['rl_baseline'],
+                                                          parameters['REINFORCE'],
                                                           parameters['training'],
                                                           base_path=args.base_path,
                                                           logger=logger,
@@ -83,16 +84,22 @@ if __name__ == '__main__':
             save_results(model_return, model_steps, model_hits, args.base_path)
 
     elif args.model == 'ac':
-        parameters = {'rl_baseline': parameters['rl_baseline'],
+        parameters = {'actor_critic': parameters['actor_critic'],
                       'training': parameters['training'],
                       'MapWorld': mw_params}
-        actor_critic(mwg,
-                     parameters['rl_baseline'],
-                     parameters['training'],
-                     base_path=args.base_path,
-                     logger=logger,
-                     save_results=args.save_results)
-
+        model_return, model_steps, model_hits = actor_critic(mwg,
+                                                             parameters['actor_critic'],
+                                                             parameters['training'],
+                                                             base_path=args.base_path,
+                                                             logger=logger,
+                                                             save_results=args.save_results)
+    elif args.model == 'dqn':
+        parameters = {'dqn': parameters['dqn'],
+                      'training': parameters['training'],
+                      'MapWorld': mw_params}
+        main(mwg,
+             parameters['dqn'],
+             parameters['training'])
     print('\n-------------------')
     print('Mean return: ', np.mean(model_return))
     print('-------------------')
