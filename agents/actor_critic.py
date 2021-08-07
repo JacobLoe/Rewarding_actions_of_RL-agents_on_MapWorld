@@ -1,49 +1,33 @@
+import os
 import numpy as np
-from collections import namedtuple
 from tqdm import tqdm
+from collections import namedtuple
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
-from torch.nn import DataParallel
-from torch.utils.data import DataLoader
-from sentence_transformers import SentenceTransformer
 
-from utils.ReplayBuffer import ReplayBuffer, RLDataset
+from sentence_transformers import SentenceTransformer
 
 
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
 def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, save_results):
+    running_reward = 10
     SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
-    running_reward = 10
-
-    # assign all available gpu devices to pytorch
-    device_count = torch.cuda.device_count()
-    print(device_count)
-    d = 'cuda:'
-    for i in range(device_count):
-        d = d + f'{i}'
-    device = torch.device(d if torch.cuda.is_available() else "cpu")
-    print(device)
+    device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
     available_actions = mwg.total_available_actions
 
     emsize = model_parameters['embedding_size']  # embedding size of the bert model
     max_sequence_length = model_parameters['max_sequence_length']    # maximum length the text state of the env will get padded to
     output_size = len(available_actions)
     num_layers = model_parameters['num_layers']
-    action_model = DataParallel(ActionModel(emsize,
-                                max_sequence_length,
-                                output_size,
-                                num_layers)).to(device)
+    model = ActionModel(emsize,
+                        max_sequence_length,
+                        output_size,
+                        num_layers).to(device)
 
-    buffer = ReplayBuffer(training_parameters['replay_size'])
-    # Named tuple for storing experience steps gathered during training
-    Experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'done', 'new_state'])
-
-    print(action_model.device_ids)
-    # print(daeada)
     lr = training_parameters['learning_rate']
     num_episodes = training_parameters['num_episodes']
     batch_size = training_parameters['batch_size']
@@ -52,11 +36,22 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
     checkpoint_frequency = training_parameters['checkpoint_frequency']  # how often should a checkpoint be created
     starting_episode = 0
 
-    action_optimizer = torch.optim.Adam(action_model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     em_model = SentenceTransformer(model_parameters['embedding_model'])
 
     eps = np.finfo(np.float32).eps.item()
+
+    ck_path = os.path.join(base_path, 'checkpoint.pt')
+
+    if os.path.isdir(ck_path) and save_results:
+        # if a checkpoint for the model already exist resume from there
+        checkpoint = torch.load(ck_path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        starting_episode = checkpoint['current_episode']
+    elif not os.path.isdir(base_path) and save_results:
+        os.makedirs(base_path)
 
     total_rewards = []
     total_steps = []
@@ -87,10 +82,9 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
             embeddings = em_model.encode(text)
             embedded_text_tensor = torch.FloatTensor([embeddings])
 
-            action_probabilities, state_value = action_model(im_tensor.to(device),
+            action_probabilities, state_value = model(im_tensor.to(device),
                                                              embedded_text_tensor.to(device))
             logger.debug('action_probabilities', action_probabilities)
-            # action_probabilities = action_probabilities.cpu().detach().numpy()[0]
 
             # create a categorical distribution over the list of probabilities of actions
             m = Categorical(action_probabilities)
@@ -102,9 +96,6 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
 
             # take the action
             state, reward, done, room_found = mwg.step(action.item())
-
-            exp = Experience([], action, reward, done, [])
-            buffer.append(exp)
 
             rewards.append(reward)
 
@@ -122,13 +113,6 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
                 batch_counter += 1
 
                 if batch_counter == batch_size:
-                    # dataset = RLDataset(buffer, training_parameters['max_steps'])
-                    # dataloader = DataLoader(dataset=dataset,
-                    #                         batch_size=training_parameters['batch_size'])
-                    # for d in dataloader:
-                    #     print(d)
-                    # print(sdsadsd)
-                    print('---------training---------')
 
                     # TODO ignore for now
                     # update cumulative reward
@@ -157,16 +141,16 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
                         policy_losses.append(-log_prob * advantage)
 
                         # calculate critic (value) loss using L1 smooth loss
-                        value_losses.append(F.smooth_l1_loss(value, torch.tensor([R]).to(device)))
+                        value_losses.append(F.smooth_l1_loss(value, torch.tensor([R]).unsqueeze(-1).to(device)))
 
                     # reset gradients
-                    action_optimizer.zero_grad()
+                    optimizer.zero_grad()
                     # sum up all the values of policy_losses and value_losses
-                    action_loss = torch.stack(policy_losses).sum()
+                    loss = torch.stack(policy_losses).sum() + torch.stack(value_losses).sum()
 
                     # perform backprop
-                    action_loss.backward()
-                    action_optimizer.step()
+                    loss.backward()
+                    optimizer.step()
 
                     batch_rewards = []
                     batch_actions = []

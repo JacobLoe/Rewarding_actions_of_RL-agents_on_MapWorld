@@ -93,6 +93,8 @@ if __name__ == '__main__':
                                                              base_path=args.base_path,
                                                              logger=logger,
                                                              save_results=args.save_results)
+        if args.save_results:
+            save_results(model_return, model_steps, model_hits, args.base_path)
     elif args.model == 'dqn':
         parameters = {'dqn': parameters['dqn'],
                       'training': parameters['training'],
