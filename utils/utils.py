@@ -57,3 +57,12 @@ def get_data(base_path):
     plot_base_path = os.path.join(base_path, 'plots')
 
     return model_return, model_steps, model_hits, num_episodes, plot_base_path
+
+
+def preprocess_mapworld_state(state, em_model):
+    im = state['current_room']
+    im = np.reshape(im, (np.shape(im)[2], np.shape(im)[1], np.shape(im)[0]))
+
+    text = state['text_state']
+    embeddings = em_model.encode(text)
+    return im, embeddings

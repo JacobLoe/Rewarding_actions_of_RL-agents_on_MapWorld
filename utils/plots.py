@@ -56,7 +56,8 @@ def create_figure(model_steps, model_return, model_name, plot_path, save_plot=Tr
     fig.update_yaxes(title_text=y_axis_label)
     if save_plot:
         fig.write_image(plot_path)
-        # TODO save HTML plot
+        html_path = plot_path[:-4] + '.html'
+        fig.write_html(html_path)
     else:
         fig.show()
 

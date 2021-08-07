@@ -1,11 +1,17 @@
 import numpy as np
-import torch
-import torch.nn.functional as F
-from torch import nn
 from tqdm import tqdm
-from sentence_transformers import SentenceTransformer
 import os
-from time import time
+from collections import namedtuple
+
+import torch
+from torch import nn
+import torch.nn.functional as F
+from torch.nn import DataParallel
+from torch.utils.data import DataLoader
+
+from utils import preprocess_mapworld_state
+from utils.ReplayBuffer import ReplayBuffer, RLDataset
+from sentence_transformers import SentenceTransformer
 
 
 # adapted from: https://towardsdatascience.com/learning-reinforcement-learning-reinforce-with-pytorch-5e8ad7fc7da0
@@ -29,14 +35,21 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
     # TODO switch to gym action space
     action_space = np.arange(len(available_actions))
 
+    # assign all available gpu devices to pytorch
+    device_count = [i for i in range(torch.cuda.device_count())]
+    print('device count', device_count)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.debug('Devive: {}'.format(device))
 
     output_size = len(available_actions)
-    model = RLBaseline(model_parameters['embedding_size'],
-                       model_parameters['max_sequence_length'],
-                       output_size,
-                       model_parameters['num_layers']).to(device)
+    model = DataParallel(RLBaseline(model_parameters['embedding_size'],
+                                    model_parameters['max_sequence_length'],
+                                    output_size,
+                                    model_parameters['num_layers']).to(device))
+
+    buffer = ReplayBuffer(training_parameters['replay_size'])
+    # Named tuple for storing experience steps gathered during training
+    Experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'done', 'new_state'])
 
     lr = training_parameters['learning_rate']
     num_episodes = training_parameters['num_episodes']
@@ -87,24 +100,22 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
 
         done = False
         steps = 0
+
+        # preprocess state (image and text)
+        im, embeddings = preprocess_mapworld_state(s_0, em_model=em_model)
+        im_tensor = torch.FloatTensor([im])
+        embedded_text_tensor = torch.FloatTensor([embeddings])
         while not done and steps < max_steps:
 
-            # preprocess state (image and text)
-            im = s_0['current_room']
-            im = np.reshape(im, (np.shape(im)[2], np.shape(im)[1], np.shape(im)[0]))
-            im_tensor = torch.FloatTensor([im]).to(device)
-
-            print('im_tensor', im_tensor.size())
-
-            text = s_0['text_state']
-            embeddings = em_model.encode(text)
-            embedded_text_tensor = torch.FloatTensor([embeddings]).to(device)
-
-            action_probabilities = model(im_tensor, embedded_text_tensor)
+            action_probabilities = model(im_tensor.to(device),
+                                         embedded_text_tensor.to(device))
             action_probabilities = action_probabilities.cpu().detach().numpy()[0]
             action = np.random.choice(action_space, p=action_probabilities)
 
             s_1, reward, done, room_found = mwg.step(action)
+
+            exp = Experience(s_0, action, reward, done, [])
+            buffer.append(exp)
 
             states_image.append(im)
             states_text.append(embeddings)
@@ -127,6 +138,13 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
                 batch_counter += 1
 
                 if batch_counter == batch_size:
+                    dataset = RLDataset(buffer, training_parameters['max_steps'])
+                    dataloader = DataLoader(dataset=dataset,
+                                            batch_size=training_parameters['batch_size'])
+                    for i, d in enumerate(dataloader):
+                        print(i, d[0])
+                    print(sdsadsd)
+
                     model.train()
                     optimizer.zero_grad()
 
