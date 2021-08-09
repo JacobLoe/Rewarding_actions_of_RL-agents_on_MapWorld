@@ -83,7 +83,7 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
             embedded_text_tensor = torch.FloatTensor([embeddings])
 
             action_probabilities, state_value = model(im_tensor.to(device),
-                                                             embedded_text_tensor.to(device))
+                                                      embedded_text_tensor.to(device))
             logger.debug('action_probabilities', action_probabilities)
 
             # create a categorical distribution over the list of probabilities of actions
@@ -111,7 +111,6 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
                 batch_rewards.extend(rewards)
                 batch_actions.extend(saved_actions)
                 batch_counter += 1
-
                 if batch_counter == batch_size:
 
                     # TODO ignore for now
@@ -131,7 +130,7 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
                         R = r + gamma * R
                         returns.insert(0, R)
 
-                    returns = torch.tensor(returns).to(device)
+                    returns = torch.tensor(returns, dtype=torch.float32).to(device)
                     returns = (returns - returns.mean()) / (returns.std() + eps)
 
                     for (log_prob, value), R in zip(batch_actions, returns):
