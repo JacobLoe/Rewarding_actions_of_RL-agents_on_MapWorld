@@ -12,11 +12,11 @@ from sentence_transformers import SentenceTransformer
 
 
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
-def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, save_results):
+def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, save_model, gpu):
     running_reward = 10
     SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
-    device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+    device = torch.device(gpu if torch.cuda.is_available() else "cpu")
     available_actions = mwg.total_available_actions
 
     emsize = model_parameters['embedding_size']  # embedding size of the bert model
@@ -44,13 +44,13 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
 
     ck_path = os.path.join(base_path, 'checkpoint.pt')
 
-    if os.path.isdir(ck_path) and save_results:
+    if os.path.isdir(ck_path) and save_model:
         # if a checkpoint for the model already exist resume from there
         checkpoint = torch.load(ck_path)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         starting_episode = checkpoint['current_episode']
-    elif not os.path.isdir(base_path) and save_results:
+    elif not os.path.isdir(base_path) and save_model:
         os.makedirs(base_path)
 
     total_rewards = []
@@ -149,6 +149,7 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
 
                     # perform backprop
                     loss.backward()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
                     optimizer.step()
 
                     batch_rewards = []
@@ -159,6 +160,14 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
                     # if episode % args.log_interval == 0:
                     #     print('Episode {}\tLast reward: {:.2f}\tAverage reward: {:.2f}'.format(
                     #           episode, ep_reward, running_reward))
+
+        # save the progress of the training every checkpoint_frequency episodes
+        if episode % checkpoint_frequency == 0 and save_model:
+            torch.save({
+                'current_episode': episode,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+            }, ck_path)
 
     return total_rewards, total_steps, hits
 

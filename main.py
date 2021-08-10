@@ -21,17 +21,21 @@ logger.propagate = False    # prevents log messages from appearing twice
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", choices=['random', 'reinforce', 'ac', 'dqn'], help="")
+    parser.add_argument("model", choices=['random', 'reinforce', 'ac', 'dqn'],
+                        help="Decide which model is to be run")
     parser.add_argument("--base_path", default="results",
                         help="Path where results, checkpoints and parameters are saved to")
     parser.add_argument("--parameters", default='all_parameters.json'
-                        , help="The path to the global parameters json")
+                        , help="The path to the global parameters json. Default is all_parameters.json")
     parser.add_argument('--log_level', default='warning', choices=['warning', 'info', 'debug'],
-                        help='Sets which logging messages to print')
+                        help='Sets which logging messages to print. Default is "warning"')
     parser.add_argument('--save_results', type=bool, default=True,
-                        help='S')
+                        help='Sets whether the rewards, number of steps per episode .. are to be saved. Default is True')
+    parser.add_argument('--save_model', type=bool, default=True,
+                        help='Sets whether a checkpoint of the model is to be saved. Default is True')
     parser.add_argument('--load_checkpoint', type=bool, default='',
-                        help='If set to True, parameters and checkpoints are loaded from args.base_path')
+                        help='If set to True, parameters and checkpoints are loaded from args.base_path. Default is False')
+    parser.add_argument('--gpu', default='cuda:0', help='')
     args = parser.parse_args()
 
     # set log level according to command line
@@ -53,7 +57,13 @@ if __name__ == '__main__':
                       room_types=mw_params['room_types'], room_repetitions=mw_params['room_repetitions'],
                       ade_path=mw_params['ade_path'],
                       image_resolution=(mw_params['image_width'], mw_params['image_height']),
-                      captions=mw_params['captions'])
+                      captions=mw_params['captions'],
+                      reward_step=mw_params['reward_step'],
+                      reward_wrong_action=mw_params['reward_wrong_action'],
+                      reward_room_selection=mw_params['reward_room_selection'],
+                      penalty_room_selection=mw_params['penalty_room_selection'],
+                      reward_selection_by_distance=mw_params['reward_selection_by_distance'],
+                      reward_step_function=mw_params['reward_step_function'])
 
     # run the chosen model on MapWorld with the loaded parameters
     if args.model == 'random':
@@ -79,7 +89,8 @@ if __name__ == '__main__':
                                                           parameters['training'],
                                                           base_path=args.base_path,
                                                           logger=logger,
-                                                          save_results=args.save_results)
+                                                          save_model=args.save_model,
+                                                          gpu=args.gpu)
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
 
@@ -92,7 +103,8 @@ if __name__ == '__main__':
                                                              parameters['training'],
                                                              base_path=args.base_path,
                                                              logger=logger,
-                                                             save_results=args.save_results)
+                                                             save_model=args.save_model,
+                                                             gpu=args.gpu)
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
     elif args.model == 'dqn':

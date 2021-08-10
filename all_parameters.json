@@ -10,7 +10,13 @@
         "n_rooms": 10,
         "room_repetitions": 2,
         "room_types": 2,
-        "captions": "localized_narratives/ade20k_train_captions.json"
+        "captions": "localized_narratives/ade20k_train_captions.json",
+        "reward_step": -10.0,
+        "reward_wrong_action": 0.0,
+        "reward_room_selection": 2000.0,
+        "penalty_room_selection": -1000.0,
+        "reward_selection_by_distance": "True",
+        "reward_step_function": "linear"
     },
     "REINFORCE": {
         "embedding_model": "paraphrase-MiniLM-L6-v2",
