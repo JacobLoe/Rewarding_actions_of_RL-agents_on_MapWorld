@@ -15,11 +15,11 @@ from sentence_transformers import SentenceTransformer
 
 
 # adapted from: https://towardsdatascience.com/learning-reinforcement-learning-reinforce-with-pytorch-5e8ad7fc7da0
-def reinforce(mwg, model_parameters, training_parameters, base_path, logger, save_results):
+def reinforce(mwg, model_parameters, training_parameters, base_path, logger, save_model):
     """
 
     Args:
-        save_results:
+        save_model:
         model_parameters:
         training_parameters:
         base_path:
@@ -59,7 +59,6 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
     checkpoint_frequency = training_parameters['checkpoint_frequency']  # how often should a checkpoint be created
     starting_episode = 0
 
-    # TODO look into different loss functions ADAM ?
     # TODO maybe also use lr scheduler (adjust lr if) // Gradient clipping
     # TODO record loss function in parameters ?
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -70,13 +69,13 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
 
     ck_path = os.path.join(base_path, 'checkpoint.pt')
 
-    if os.path.isdir(ck_path) and save_results:
+    if os.path.isdir(ck_path) and save_model:
         # if a checkpoint for the model already exist resume from there
         checkpoint = torch.load(ck_path)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         starting_episode = checkpoint['current_episode']
-    elif not os.path.isdir(base_path) and save_results:
+    elif not os.path.isdir(base_path) and save_model:
         os.makedirs(base_path)
 
     total_rewards = []
@@ -173,7 +172,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
                     batch_counter = 0
 
         # save the progress of the training every checkpoint_frequency episodes
-        if episode % checkpoint_frequency == 0 and save_results:
+        if episode % checkpoint_frequency == 0 and save_model:
             torch.save({
                 'current_episode': episode,
                 'model_state_dict': model.state_dict(),
