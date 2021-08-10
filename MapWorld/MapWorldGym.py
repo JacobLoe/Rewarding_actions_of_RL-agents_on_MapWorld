@@ -15,7 +15,13 @@ class MapWorldGym(Env):
     def __init__(self, n=4, m=4, n_rooms=10, room_types=2, room_repetitions=2,
                  ade_path='../../data/ADE20K_2021_17_01/images/ADE/training/',
                  image_resolution=(360, 360),
-                 captions="./localized_narratives/ade20k_train_captions.json"):
+                 captions="./localized_narratives/ade20k_train_captions.json",
+                 reward_step=-10.0,
+                 reward_wrong_action=0.0,
+                 reward_room_selection=2000.0,
+                 penalty_room_selection=-1000.0,
+                 reward_selection_by_distance=True,
+                 reward_step_function='linear'):
         # the dimensions of the map
         self.n = n
         self.m = m
@@ -44,6 +50,18 @@ class MapWorldGym(Env):
         # maps the actions actions input into MapWorldGym to actions that are interpretable by MapWorld
         self.total_available_actions = {0: 'north', 1: 'east', 2: 'south', 3: 'west', 4: 'select_room'}
         self.action_space = spaces.Discrete(len(self.total_available_actions))
+
+        # define the reward function
+        self.reward_step = reward_step
+        self.reward_room_selection = reward_room_selection
+        self.reward_wrong_action = reward_wrong_action
+        self.penalty_room_selection = penalty_room_selection
+
+        rsf = ('constant', 'linear', 'logistic')
+        if reward_step_function not in rsf:
+            raise Exception(f'The reward function for a step has to be one of {rsf}. Was "{reward_step_function}"')
+        self.reward_step_function = reward_step_function
+        self.reward_selection_by_distance = reward_selection_by_distance
 
         ##########################################################
         # The variables defined in the init are placeholders and are only there function is explained here
@@ -141,10 +159,15 @@ class MapWorldGym(Env):
         """
         if self.current_room_name == self.target_room_name:
             self.room_found = 1
+            if not self.reward_selection_by_distance:
+                reward = self.reward_room_selection
         else:
             self.room_found = 0
+            if not self.reward_selection_by_distance:
+                reward = self.penalty_room_selection
 
-        reward = self.reward_room_selection()
+        if self.reward_selection_by_distance:
+            reward = self.get_reward_from_distance()
 
         # Terminate the game
         self.done = True
@@ -164,8 +187,12 @@ class MapWorldGym(Env):
         """
         if action in self.available_actions:
             # TODO maybe make step reward linear increasing. Early steps are cheap, later costly
-            reward = -1.0 * self.model_steps    # linear increasing reward
-            # reward = -10.0 / (1 + np.exp(-self.model_steps + 5)) # reward increasing with sigmoid
+            if self.reward_step_function == 'constant':
+                reward = self.reward_step
+            elif self.reward_step_function == 'linear':
+                reward = self.reward_step * self.model_steps    # linear increasing reward
+            elif self.reward_step_function == 'logistic':
+                reward = self.reward_step / (1 + np.exp(-self.model_steps + 5)) # reward increasing with sigmoid
             state = self.mw.upd(action)
 
             self.current_room_name = path.relpath(state[0], self.ade_path)
@@ -174,21 +201,22 @@ class MapWorldGym(Env):
         else:
             # TODO not sure what the correct reward here would be for taking an unavailable action
             # TODO maybe stop penalizing wrong actions
-            reward = 0.0
+            reward = self.reward_wrong_action
+            print('wrong action', reward)
 
         self.state = {'current_room': self.current_room,
                       'text_state': self.directions}
 
         return reward
 
-    def reward_room_selection(self):
+    def get_reward_from_distance(self):
         """
         Compute the euclidean distance between the feature vectors of two images.
 
         Returns:
                 a float, the reward for selecting a room
         """
-        # TODO how to cite ?
+        # TODO how to cite hpi work ?
 
         feature0_path = self.target_room_path[:-4] + '.npy'
         feature1_path = self.current_room_path[:-4] + '.npy'
@@ -200,11 +228,11 @@ class MapWorldGym(Env):
         distance = euclidean_distances(feature0, feature1)[0][0]
         # TODO check which normalization to use
         # normalize distance, subtract mean, divide by maximum
-        # additionally the sign is switched to map the maximum value to the maximum reward
+        # additionally the sign is switched to map the minimum distance value to the maximum reward
         normalized_distance = -(distance-15.956363)/30.135202     # range -0.5 to 0.5, mean is 0
 
         # 1000 when the rooms are the exact same,
-        reward = 2000.0 * normalized_distance     # range -1000 to 1000, mean is 0
+        reward = self.reward_room_selection * normalized_distance     # range -1000 to 1000, mean is 0
         return reward
 
     def get_caption_for_image(self, image_path):

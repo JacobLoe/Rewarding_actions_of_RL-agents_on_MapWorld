@@ -15,7 +15,7 @@ from sentence_transformers import SentenceTransformer
 
 
 # adapted from: https://towardsdatascience.com/learning-reinforcement-learning-reinforce-with-pytorch-5e8ad7fc7da0
-def reinforce(mwg, model_parameters, training_parameters, base_path, logger, save_model):
+def reinforce(mwg, model_parameters, training_parameters, base_path, logger, save_model, gpu):
     """
 
     Args:
@@ -37,8 +37,8 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
 
     # assign all available gpu devices to pytorch
     device_count = [i for i in range(torch.cuda.device_count())]
-    print('device count', device_count)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logger.debug('device count', device_count)
+    device = torch.device(gpu if torch.cuda.is_available() else "cpu")
     logger.debug('Devive: {}'.format(device))
 
     output_size = len(available_actions)

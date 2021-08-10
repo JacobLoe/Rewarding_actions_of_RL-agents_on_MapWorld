@@ -12,11 +12,11 @@ from sentence_transformers import SentenceTransformer
 
 
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
-def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, save_model):
+def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, save_model, gpu):
     running_reward = 10
     SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
-    device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+    device = torch.device(gpu if torch.cuda.is_available() else "cpu")
     available_actions = mwg.total_available_actions
 
     emsize = model_parameters['embedding_size']  # embedding size of the bert model
