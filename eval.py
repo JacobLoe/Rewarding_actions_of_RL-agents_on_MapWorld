@@ -14,7 +14,7 @@ if __name__ == '__main__':
                         help='Use --save_plots '' to show the plots in the browser')
     parser.add_argument('--filter_return', type=bool, default=True,
                         help='Sets whether to apply a moving average to the return of the model')
-    parser.add_argument('--filter_size', type=int, default=100, help='Sets the size of the moving average filter')
+    parser.add_argument('--filter_size', type=int, default=5000, help='Sets the size of the moving average filter')
     args = parser.parse_args()
 
     if args.base_path:

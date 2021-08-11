@@ -15,7 +15,7 @@ def create_histogram(data, title, plot_path='', save_plot=False):
         save_plot:
     """
     # TODO better title
-    title = 'Counts of {}'.format(title)
+    title = f'Counts of {title}'
 
     df = pd.DataFrame(data)
     fig = px.histogram(df, title=title)
@@ -41,11 +41,11 @@ def create_figure(model_steps, model_return, model_name, plot_path, save_plot=Tr
     """
 
     if filter_return:
-        mreturn = uniform_filter1d(model_return, mode='constant', size=size)
+        mreturn = uniform_filter1d(model_return, mode='reflect', size=size)
     else:
         mreturn = model_return
 
-    title = 'Return of {} for {} episodes, moving average over {} episodes'.format(model_name, len(model_return), size)
+    title = f'Return of {model_name} for {len(model_return)} episodes, moving average over {size} episodes'
     x_axis_label = 'Steps'
     y_axis_label = 'Return'
     fig = px.line(x=np.cumsum(model_steps),
@@ -76,15 +76,15 @@ def create_all_plots(model_return, model_steps, model_hits, num_episodes,
         filter_return: bool, Sets whether to apply a moving average to the return of the model
         filter_size:
     """
-    title = 'the return over {}'.format(num_episodes)
+    title = f'the return over {num_episodes}'
     plot_path = os.path.join(plot_base_path, 'return_histogram.png')
     create_histogram(model_return, title, plot_path, save_plot=save_plots)
 
-    title = 'room guesses over {}'.format(num_episodes)
+    title = f'room guesses over {num_episodes}'
     plot_path = os.path.join(plot_base_path, 'hits_histogram.png')
     create_histogram(model_hits, title, plot_path, save_plot=save_plots)
 
-    title = 'the steps over {}'.format(num_episodes)
+    title = f'the steps over {num_episodes}'
     plot_path = os.path.join(plot_base_path, 'steps_histogram.png')
     create_histogram(model_steps, title, plot_path, save_plot=save_plots)
 

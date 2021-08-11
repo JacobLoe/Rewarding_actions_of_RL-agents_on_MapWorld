@@ -192,7 +192,8 @@ class MapWorldGym(Env):
             elif self.reward_step_function == 'linear':
                 reward = self.reward_step * self.model_steps    # linear increasing reward
             elif self.reward_step_function == 'logistic':
-                reward = self.reward_step / (1 + np.exp(-self.model_steps + 5)) # reward increasing with sigmoid
+                reward = self.reward_step / (1 + np.exp(-self.model_steps + 5))     # reward increasing with sigmoid
+
             state = self.mw.upd(action)
 
             self.current_room_name = path.relpath(state[0], self.ade_path)
@@ -202,7 +203,6 @@ class MapWorldGym(Env):
             # TODO not sure what the correct reward here would be for taking an unavailable action
             # TODO maybe stop penalizing wrong actions
             reward = self.reward_wrong_action
-            print('wrong action', reward)
 
         self.state = {'current_room': self.current_room,
                       'text_state': self.directions}
