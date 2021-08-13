@@ -98,6 +98,8 @@ if __name__ == '__main__':
         parameters = {'actor_critic': parameters['actor_critic'],
                       'training': parameters['training'],
                       'MapWorld': mw_params}
+        if args.save_results:
+            save_parameters(parameters, args.base_path)
         model_return, model_steps, model_hits = actor_critic(mwg,
                                                              parameters['actor_critic'],
                                                              parameters['training'],

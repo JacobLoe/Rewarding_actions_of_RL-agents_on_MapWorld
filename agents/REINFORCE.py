@@ -39,7 +39,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
     device_count = [i for i in range(torch.cuda.device_count())]
     logger.debug('device count', device_count)
     device = torch.device(gpu if torch.cuda.is_available() else "cpu")
-    logger.debug('Devive: {}'.format(device))
+    logger.debug(f'Device: {device}')
 
     output_size = len(available_actions)
     model = DataParallel(RLBaseline(model_parameters['embedding_size'],

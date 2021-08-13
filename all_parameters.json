@@ -1,8 +1,6 @@
 {
     "MapWorld": {
         "ade_path": "../../data/ADE20K_2021_17_01/images/ADE/training/",
-        "caption_checkpoints": "./im2txt/checkpoints/im2txt_5M/model.ckpt-5000000",
-        "caption_vocab": "./im2txt/vocab/word_counts.txt",
         "image_height": 360,
         "image_width": 360,
         "m": 4,
@@ -12,6 +10,8 @@
         "room_types": 2,
         "captions": "localized_narratives/ade20k_train_captions.json",
         "reward_step": -10.0,
+        "reward_linear_step": -0.6666,
+        "reward_logistic_step": -10.0,
         "reward_wrong_action": 0.0,
         "reward_room_selection": 2000.0,
         "penalty_room_selection": -1000.0,

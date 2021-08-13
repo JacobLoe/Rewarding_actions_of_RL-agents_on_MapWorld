@@ -17,6 +17,8 @@ class MapWorldGym(Env):
                  image_resolution=(360, 360),
                  captions="./localized_narratives/ade20k_train_captions.json",
                  reward_step=-10.0,
+                 reward_linear_step=-0.6666,
+                 reward_logistic_step=-10.0,
                  reward_wrong_action=0.0,
                  reward_room_selection=2000.0,
                  penalty_room_selection=-1000.0,
@@ -51,12 +53,15 @@ class MapWorldGym(Env):
         self.total_available_actions = {0: 'north', 1: 'east', 2: 'south', 3: 'west', 4: 'select_room'}
         self.action_space = spaces.Discrete(len(self.total_available_actions))
 
-        # define the reward function
+        # define the rewards (and penalties) for taking actions
         self.reward_step = reward_step
+        self.reward_linear_step = reward_linear_step
+        self.reward_logistic_step = reward_logistic_step
         self.reward_room_selection = reward_room_selection
         self.reward_wrong_action = reward_wrong_action
         self.penalty_room_selection = penalty_room_selection
 
+        # check which reward function is to be used for takings steps and if it is valid
         rsf = ('constant', 'linear', 'logistic')
         if reward_step_function not in rsf:
             raise Exception(f'The reward function for a step has to be one of {rsf}. Was "{reward_step_function}"')
@@ -190,9 +195,12 @@ class MapWorldGym(Env):
             if self.reward_step_function == 'constant':
                 reward = self.reward_step
             elif self.reward_step_function == 'linear':
-                reward = self.reward_step * self.model_steps    # linear increasing reward
+                # linear increasing reward
+                reward = self.reward_linear_step * self.model_steps
             elif self.reward_step_function == 'logistic':
-                reward = self.reward_step / (1 + np.exp(-self.model_steps + 5)) # reward increasing with sigmoid
+                # reward increasing with logistic function
+                reward = self.reward_logistic_step / (1 + np.exp(-self.model_steps + 11))
+
             state = self.mw.upd(action)
 
             self.current_room_name = path.relpath(state[0], self.ade_path)
@@ -202,7 +210,6 @@ class MapWorldGym(Env):
             # TODO not sure what the correct reward here would be for taking an unavailable action
             # TODO maybe stop penalizing wrong actions
             reward = self.reward_wrong_action
-            print('wrong action', reward)
 
         self.state = {'current_room': self.current_room,
                       'text_state': self.directions}
