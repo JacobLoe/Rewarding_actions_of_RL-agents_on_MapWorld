@@ -1,5 +1,4 @@
 from agents import random_baseline, reinforce, actor_critic
-from agents.dqn import main
 from MapWorld import MapWorldGym
 from utils import save_parameters, save_results
 import numpy as np
@@ -21,7 +20,7 @@ logger.propagate = False    # prevents log messages from appearing twice
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", choices=['random', 'reinforce', 'ac', 'dqn'],
+    parser.add_argument("model", choices=['random', 'reinforce', 'ac', 'hdqn'],
                         help="Decide which model is to be run")
     parser.add_argument("--base_path", default="results",
                         help="Path where results, checkpoints and parameters are saved to")
@@ -109,10 +108,10 @@ if __name__ == '__main__':
                                                              gpu=args.gpu)
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
-    elif args.model == 'dqn':
-        parameters = {'dqn': parameters['dqn'],
-                      'training': parameters['training'],
-                      'MapWorld': mw_params}
+    elif args.model == 'hdqn':
+        # parameters = {'dqn': parameters['dqn'],
+        #               'training': parameters['training'],
+        #               'MapWorld': mw_params}
         main(mwg,
              parameters['dqn'],
              parameters['training'])

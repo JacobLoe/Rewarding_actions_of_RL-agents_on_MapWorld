@@ -100,11 +100,11 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
         done = False
         steps = 0
 
-        # preprocess state (image and text)
-        im, embeddings = preprocess_mapworld_state(s_0, em_model=em_model)
-        im_tensor = torch.FloatTensor([im])
-        embedded_text_tensor = torch.FloatTensor([embeddings])
         while not done and steps < max_steps:
+            # preprocess state (image and text)
+            im, embeddings = preprocess_mapworld_state(s_0, em_model=em_model)
+            im_tensor = torch.FloatTensor([im])
+            embedded_text_tensor = torch.FloatTensor([embeddings])
 
             action_probabilities = model(im_tensor.to(device),
                                          embedded_text_tensor.to(device))
