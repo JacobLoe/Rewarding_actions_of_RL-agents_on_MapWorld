@@ -12,7 +12,7 @@ from sentence_transformers import SentenceTransformer
 
 
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
-def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, save_model, gpu):
+def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, save_model, gpu, load_model):
     running_reward = 10
     SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
@@ -29,7 +29,7 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
                         num_layers).to(device)
 
     lr = training_parameters['learning_rate']
-    num_episodes = training_parameters['num_episodes']
+    num_episodes = int(training_parameters['num_episodes'])
     batch_size = training_parameters['batch_size']
     gamma = training_parameters['gamma']
     max_steps = training_parameters['max_steps']
@@ -44,12 +44,13 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
 
     ck_path = os.path.join(base_path, 'checkpoint.pt')
 
-    if os.path.isdir(ck_path) and save_model:
+    if os.path.isfile(ck_path) and load_model:
         # if a checkpoint for the model already exist resume from there
         checkpoint = torch.load(ck_path)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         starting_episode = checkpoint['current_episode']
+
     elif not os.path.isdir(base_path) and save_model:
         os.makedirs(base_path)
 

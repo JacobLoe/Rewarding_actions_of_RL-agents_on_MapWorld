@@ -15,7 +15,7 @@ from sentence_transformers import SentenceTransformer
 
 
 # adapted from: https://towardsdatascience.com/learning-reinforcement-learning-reinforce-with-pytorch-5e8ad7fc7da0
-def reinforce(mwg, model_parameters, training_parameters, base_path, logger, save_model, gpu):
+def reinforce(mwg, model_parameters, training_parameters, base_path, logger, save_model, gpu, load_model):
     """
 
     Args:
@@ -36,8 +36,6 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
     action_space = np.arange(len(available_actions))
 
     # assign all available gpu devices to pytorch
-    device_count = [i for i in range(torch.cuda.device_count())]
-    logger.debug('device count', device_count)
     device = torch.device(gpu if torch.cuda.is_available() else "cpu")
     logger.debug(f'Device: {device}')
 
@@ -52,7 +50,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
     Experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'done', 'new_state'])
 
     lr = training_parameters['learning_rate']
-    num_episodes = training_parameters['num_episodes']
+    num_episodes = int(training_parameters['num_episodes'])
     batch_size = training_parameters['batch_size']
     gamma = training_parameters['gamma']
     max_steps = training_parameters['max_steps']
@@ -69,13 +67,14 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
 
     ck_path = os.path.join(base_path, 'checkpoint.pt')
 
-    if os.path.isdir(ck_path) and save_model:
+    if os.path.isfile(ck_path) and load_model:
         # if a checkpoint for the model already exist resume from there
         checkpoint = torch.load(ck_path)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         starting_episode = checkpoint['current_episode']
-    elif not os.path.isdir(base_path) and save_model:
+
+    if not os.path.isdir(base_path) and save_model:
         os.makedirs(base_path)
 
     total_rewards = []
@@ -105,7 +104,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
             im, embeddings = preprocess_mapworld_state(s_0, em_model=em_model)
             im_tensor = torch.FloatTensor([im])
             embedded_text_tensor = torch.FloatTensor([embeddings])
-
+            logger.debug(embedded_text_tensor)
             action_probabilities = model(im_tensor.to(device),
                                          embedded_text_tensor.to(device))
             action_probabilities = action_probabilities.cpu().detach().numpy()[0]
@@ -140,9 +139,9 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
                     dataset = RLDataset(buffer, training_parameters['max_steps'])
                     dataloader = DataLoader(dataset=dataset,
                                             batch_size=training_parameters['batch_size'])
-                    for i, d in enumerate(dataloader):
-                        print(i, d[0])
-                    print(sdsadsd)
+                    # for i, d in enumerate(dataloader):
+                    #     print(i, d[0])
+                    # print(sdsadsd)
 
                     model.train()
                     optimizer.zero_grad()

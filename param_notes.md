@@ -29,3 +29,18 @@ The logistic reward function also reaches -10 after 15 steps and then stays at -
 If `reward_selection_by_distance` is set to `True` the reward for selecting a room is only influenced by `reward_room_selection`.
 In this case it defines the difference between the maximum and minimum reward. 
 
+# Training parameters
+
+```
+    "batch_size": 32,
+    "gamma": 0.99,
+    "learning_rate": 0.0005,
+    "max_steps": 60,
+    "num_episodes": 4e5,
+    "checkpoint_frequency": 20000,
+```
+
+A `batch_size` of 32 is the (stable) maximum for Actor-Critic.
+
+For REINFORCE and Actor-Critic 400k episodes lead to around 25 hours of training. 
+1M episodes to around 67 episodes.

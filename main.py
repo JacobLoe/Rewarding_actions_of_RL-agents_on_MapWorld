@@ -32,6 +32,8 @@ if __name__ == '__main__':
                         help='Sets whether the rewards, number of steps per episode .. are to be saved. Default is True')
     parser.add_argument('--save_model', type=bool, default=True,
                         help='Sets whether a checkpoint of the model is to be saved. Default is True')
+    parser.add_argument('--load_model', type=bool, default='',
+                        help='')
     parser.add_argument('--load_checkpoint', type=bool, default='',
                         help='If set to True, parameters and checkpoints are loaded from args.base_path. Default is False')
     parser.add_argument('--gpu', default='cuda:0', help='')
@@ -89,7 +91,8 @@ if __name__ == '__main__':
                                                           base_path=args.base_path,
                                                           logger=logger,
                                                           save_model=args.save_model,
-                                                          gpu=args.gpu)
+                                                          gpu=args.gpu,
+                                                          load_model=args.load_model)
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
 
@@ -105,7 +108,8 @@ if __name__ == '__main__':
                                                              base_path=args.base_path,
                                                              logger=logger,
                                                              save_model=args.save_model,
-                                                             gpu=args.gpu)
+                                                             gpu=args.gpu,
+                                                             load_model=args.load_model)
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
     elif args.model == 'hdqn':
