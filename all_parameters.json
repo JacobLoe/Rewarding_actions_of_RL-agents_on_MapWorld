@@ -36,6 +36,12 @@
         "max_sequence_length": 32,
         "num_layers": 2
     },
+    "hdqn": {
+        "embedding_model": "paraphrase-MiniLM-L6-v2",
+        "embedding_size": 384,
+        "max_sequence_length": 32,
+        "num_layers": 2
+    },
     "training": {
         "batch_size": 32,
         "gamma": 0.99,

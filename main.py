@@ -113,9 +113,9 @@ if __name__ == '__main__':
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
     elif args.model == 'hdqn':
-        # parameters = {'dqn': parameters['dqn'],
-        #               'training': parameters['training'],
-        #               'MapWorld': mw_params}
+        parameters = {'hdqn': parameters['hdqn'],
+                      'training': parameters['training'],
+                      'MapWorld': mw_params}
         main(mwg,
              parameters['dqn'],
              parameters['training'])

@@ -7,7 +7,7 @@ from utils.plotting import plot_episode_stats, plot_visited_states
 from utils.schedule import LinearSchedule
 
 
-if __name__ == '__main__':
+def main_hdqn():
     NUM_EPISODES = 12000
     BATCH_SIZE = 128
     GAMMA = 1.0
@@ -36,5 +36,9 @@ if __name__ == '__main__':
         exploration_schedule=exploration_schedule,
         gamma=GAMMA,)
 
+
+if __name__ == '__main__':
+
+    main_hdqn()
     # plot_episode_stats(stats)
     # plot_visited_states(visits, NUM_EPISODES)
