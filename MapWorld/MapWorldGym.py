@@ -69,7 +69,7 @@ class MapWorldGym(Env):
         self.reward_selection_by_distance = reward_selection_by_distance
 
         ##########################################################
-        # The variables defined in the init are placeholders and are only there function is explained here
+        # The variables defined in the init are placeholders and are only their function is explained here
         # They only have proper values after calling the reset function
 
         # current_room is represented by an image as a numpy array
@@ -98,7 +98,7 @@ class MapWorldGym(Env):
         # the state consists of: current room as numpy ndarray of shape (, , 3),
         # target room question(caption>) as string,
         # available actions as list of string
-        self.state = []
+        self.state = {}
 
     def reset(self):
         """
