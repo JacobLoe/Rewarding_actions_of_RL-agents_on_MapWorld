@@ -5,7 +5,7 @@ from scipy.ndimage.filters import uniform_filter1d
 import os
 
 
-def create_histogram(data, title, plot_path='', save_plot=False):
+def create_histogram(data, title, plot_path='', save_plot=False, save_html=False):
     """
 
     Args:
@@ -21,16 +21,19 @@ def create_histogram(data, title, plot_path='', save_plot=False):
     fig = px.histogram(df, title=title)
     if save_plot:
         fig.write_image(plot_path)
-        html_path = plot_path[:-4] + '.html'
-        fig.write_html(html_path)
+        if save_html:
+            html_path = plot_path[:-4] + '.html'
+            fig.write_html(html_path)
     else:
         fig.show()
 
 
-def create_figure(model_steps, model_return, model_name, plot_path, save_plot=True, filter_return=True, size=100):
+def create_figure(model_steps, model_return, model_name, plot_path,
+                  save_plot=True, filter_return=True, size=100, save_html=False):
     """
 
     Args:
+        save_html:
         filter_return:
         size:
         save_plot:
@@ -56,17 +59,19 @@ def create_figure(model_steps, model_return, model_name, plot_path, save_plot=Tr
     fig.update_yaxes(title_text=y_axis_label)
     if save_plot:
         fig.write_image(plot_path)
-        html_path = plot_path[:-4] + '.html'
-        fig.write_html(html_path)
+        if save_html:
+            html_path = plot_path[:-4] + '.html'
+            fig.write_html(html_path)
     else:
         fig.show()
 
 
 def create_all_plots(model_return, model_steps, model_hits, num_episodes,
-                     plot_base_path, save_plots, filter_return, filter_size):
+                     plot_base_path, save_plots, filter_return, filter_size, save_html):
     """
 
     Args:
+        save_html:
         model_return:
         model_steps:
         model_hits:

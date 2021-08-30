@@ -10,6 +10,8 @@ from torch.distributions import Categorical
 
 from sentence_transformers import SentenceTransformer
 
+from utils.ReplayBuffer import ReplayBuffer, RLDataset
+
 
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
 def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, save_model, gpu, load_model):
@@ -20,13 +22,17 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
     available_actions = mwg.total_available_actions
 
     emsize = model_parameters['embedding_size']  # embedding size of the bert model
-    max_sequence_length = model_parameters['max_sequence_length']    # maximum length the text state of the env will get padded to
+    max_sequence_length = model_parameters['max_sequence_length']
     output_size = len(available_actions)
     num_layers = model_parameters['num_layers']
     model = ActionModel(emsize,
                         max_sequence_length,
                         output_size,
                         num_layers).to(device)
+
+    buffer = ReplayBuffer(training_parameters['replay_size'])
+    # Named tuple for storing experience steps gathered during training
+    Experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'done', 'new_state'])
 
     lr = training_parameters['learning_rate']
     num_episodes = int(training_parameters['num_episodes'])

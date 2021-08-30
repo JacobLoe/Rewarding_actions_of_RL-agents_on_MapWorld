@@ -12,6 +12,8 @@ if __name__ == '__main__':
                              "The path is assumed to be in the form 'results/**/**/raw'")
     parser.add_argument('--save_plots', type=bool, default=True,
                         help='Use --save_plots '' to show the plots in the browser')
+    parser.add_argument('--save_html', type=bool, default='',
+                        help='Use --save_plots '' to show the plots in the browser')
     parser.add_argument('--filter_return', type=bool, default=True,
                         help='Sets whether to apply a moving average to the return of the model')
     parser.add_argument('--filter_size', type=int, default=5000, help='Sets the size of the moving average filter')
@@ -26,7 +28,7 @@ if __name__ == '__main__':
             os.makedirs(plot_base_path)
 
         create_all_plots(model_return, model_steps, model_hits, num_episodes, plot_base_path,
-                         args.save_plots, args.filter_return, args.filter_size)
+                         args.save_plots, args.filter_return, args.filter_size, args.save_html)
     else:
         results_paths = glob.glob('results/**/*.json', recursive=True)
 
@@ -39,4 +41,4 @@ if __name__ == '__main__':
                 os.makedirs(plot_base_path)
 
             create_all_plots(model_return, model_steps, model_hits, num_episodes, plot_base_path,
-                             args.save_plots, args.filter_return, args.filter_size)
+                             args.save_plots, args.filter_return, args.filter_size, args.save_html)
