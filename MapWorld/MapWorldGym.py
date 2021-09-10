@@ -235,6 +235,7 @@ class MapWorldGym(Env):
         distance = euclidean_distances(feature0, feature1)[0][0]
         # TODO check which normalization to use
         # normalize distance, subtract mean, divide by maximum
+        # mean and max distance were computed from the distance of all images to other image
         # additionally the sign is switched to map the minimum distance value to the maximum reward
         normalized_distance = -(distance-15.956363)/30.135202     # range -0.5 to 0.5, mean is 0
 
@@ -266,13 +267,10 @@ class MapWorldGym(Env):
         """
         # TODO make resizing dependent on aspect ratio of source to prevent distortions
         image = cv2.imread(image_path)
+        # reshape any grayscale images to rgb
         if len(np.shape(image)) != 3:
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
         image = cv2.resize(image, image_resolution)
         image = np.array(image)
 
         return image
-
-    def render(self, mode='human'):
-        # FIXME probably not really necessary
-        pass

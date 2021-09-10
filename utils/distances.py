@@ -7,13 +7,13 @@ import torchvision.models as models
 from torchvision import transforms
 import glob
 import os
-from plots import create_histogram
+from utils import create_histogram
 import numpy as np
 import pickle
 import random
 
 
-def load_inception():
+def load_inception(device):
     """
     Loads the InceptionV3 image classification model with pytorch.
     The last two layers (dropout and fully-connected) are removed.
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     print('outdoor_cats', len(image_path), len(numpy_path))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    inception = load_inception()
+    inception = load_inception(device)
 
     if not len(image_path) == len(numpy_path):
         dists = []

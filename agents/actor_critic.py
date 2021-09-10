@@ -30,9 +30,9 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
                         output_size,
                         num_layers).to(device)
 
-    buffer = ReplayBuffer(training_parameters['replay_size'])
+    # buffer = ReplayBuffer(training_parameters['replay_size'])
     # Named tuple for storing experience steps gathered during training
-    Experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'done', 'new_state'])
+    # Experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'done', 'new_state'])
 
     lr = training_parameters['learning_rate']
     num_episodes = int(training_parameters['num_episodes'])
@@ -158,6 +158,10 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
                     optimizer.step()
+
+                    del returns
+                    del value_losses
+                    del policy_losses
 
                     batch_rewards = []
                     batch_actions = []
