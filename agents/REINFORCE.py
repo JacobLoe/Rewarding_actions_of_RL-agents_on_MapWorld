@@ -1,16 +1,14 @@
 import numpy as np
 from tqdm import tqdm
 import os
-from collections import namedtuple
 
 import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.nn import DataParallel
-from torch.utils.data import DataLoader
+from torchvision import transforms
 
-from utils import preprocess_mapworld_state
-from utils.ReplayBuffer import ReplayBuffer, RLDataset
+from utils.distances import load_inception
 from sentence_transformers import SentenceTransformer
 
 
@@ -45,9 +43,13 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
                                     output_size,
                                     model_parameters['num_layers']).to(device))
 
-    buffer = ReplayBuffer(training_parameters['replay_size'])
-    # Named tuple for storing experience steps gathered during training
-    Experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'done', 'new_state'])
+    inception = load_inception(device)
+    preprocess = transforms.Compose([
+        transforms.Resize(299),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
 
     lr = training_parameters['learning_rate']
     num_episodes = int(training_parameters['num_episodes'])
@@ -101,9 +103,14 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
 
         while not done and steps < max_steps:
             # preprocess state (image and text)
-            im, embeddings = preprocess_mapworld_state(s_0, em_model=em_model)
+            processed_frame = preprocess(s_0['current_room']).unsqueeze(0).to(device)
+            with torch.no_grad():
+                im = inception(processed_frame).squeeze().cpu().detach().numpy()
             im_tensor = torch.FloatTensor([im])
+
+            embeddings = em_model.encode(s_0['text_state'])
             embedded_text_tensor = torch.FloatTensor([embeddings])
+
             logger.debug(embedded_text_tensor)
             action_probabilities = model(im_tensor.to(device),
                                          embedded_text_tensor.to(device))
@@ -111,9 +118,6 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
             action = np.random.choice(action_space, p=action_probabilities)
 
             s_1, reward, done, room_found = mwg.step(action)
-
-            exp = Experience(s_0, action, reward, done, [])
-            buffer.append(exp)
 
             states_image.append(im)
             states_text.append(embeddings)
@@ -136,12 +140,6 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
                 batch_counter += 1
 
                 if batch_counter == batch_size:
-                    dataset = RLDataset(buffer, training_parameters['max_steps'])
-                    dataloader = DataLoader(dataset=dataset,
-                                            batch_size=training_parameters['batch_size'])
-                    # for i, d in enumerate(dataloader):
-                    #     print(i, d[0])
-                    # print(sdsadsd)
 
                     model.train()
                     optimizer.zero_grad()
@@ -151,7 +149,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
                     inputs_tensor = torch.FloatTensor(batch_states_text).to(device)
                     reward_tensor = torch.FloatTensor(batch_rewards).to(device)
                     action_tensor = torch.LongTensor(batch_actions).to(device)
-                    print('im_tensor', im_tensor.size())
+                    # print('im_tensor', im_tensor.size())
 
                     logprob = torch.log(model(im_tensor, inputs_tensor))
                     selected_logprobs = reward_tensor * torch.gather(logprob, 1, action_tensor.unsqueeze(1)).squeeze()
@@ -202,52 +200,25 @@ class RLBaseline(nn.Module):
     def __init__(self, emsize, max_sequence_length, output_size, num_layers):
         super(RLBaseline, self).__init__()
 
-        # TODO replace cnn and lstm with pretrained pytorch models
-
         # TODO with the sentence transformer max_sequence_length is not a thing anymore
         # TODO maybe replace it with something else (emsize, etc)
         # TODO https://arxiv.org/pdf/1902.07742.pdf
 
-        # TODO look into padding of input image
-        # CNN
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc_cnn1 = nn.Linear(121104, 1200)   # layer size is result of image res (360x360) after conv + pool
+        self.fc_cnn2 = nn.Linear(2048, max_sequence_length)
 
-        self.fc_cnn2 = nn.Linear(1200, max_sequence_length)
-
-        # text processing
-        self.lstm1 = nn.LSTM(1, emsize, batch_first=True, num_layers=num_layers)
         self.fc_lstm = nn.Linear(emsize, max_sequence_length)
 
         self.fc4 = nn.Linear(max_sequence_length, max_sequence_length)
         self.fc5 = nn.Linear(max_sequence_length, output_size)
 
-        # self.init_weights()
-
     def forward(self, im, text):
-        cnn = self.pool(F.relu(self.conv1(im)))
-        cnn = self.pool(F.relu(self.conv2(cnn)))
-        cnn = torch.flatten(cnn, 1)     # flatten all dimensions except batch
-        cnn = F.relu(self.fc_cnn1(cnn))
-        cnn = torch.tanh(self.fc_cnn2(cnn))
 
-        text, _ = self.lstm1(text.unsqueeze(-1))
-
+        cnn = torch.tanh(self.fc_cnn2(im))
+        # text, _ = self.lstm1(text.unsqueeze(-1))
         text = torch.tanh(self.fc_lstm(text))
-        text = torch.mean(text, dim=1)
-
+        # text = torch.mean(text, dim=1)
         output = torch.mul(cnn, text)
         output = F.relu(self.fc4(output))
         output = self.fc5(output)
         actions = F.softmax(output, dim=1)
         return actions
-
-    def init_weights(self):
-        # TODO add init for cnn
-        # make initrange a parameter
-        initrange = 0.1
-        # self.encoder.weight.data.uniform_(-initrange, initrange)
-        # self.decoder.bias.data.zero_()
-        # self.decoder.weight.data.uniform_(-initrange, initrange)

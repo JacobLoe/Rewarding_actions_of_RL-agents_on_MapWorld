@@ -3,6 +3,7 @@ from MapWorld.mapworld import MapWorldWrapper
 import numpy as np
 from gym import Env, spaces
 import cv2
+from PIL import Image
 from os import path
 import json
 from sklearn.metrics.pairwise import euclidean_distances
@@ -22,8 +23,9 @@ class MapWorldGym(Env):
                  reward_wrong_action=0.0,
                  reward_room_selection=2000.0,
                  penalty_room_selection=-1000.0,
-                 reward_selection_by_distance=True,
-                 reward_step_function='linear'):
+                 reward_selection_by_distance='True',
+                 reward_step_function='linear',
+                 images_returned_as_array='True'):
         # the dimensions of the map
         self.n = n
         self.m = m
@@ -67,6 +69,8 @@ class MapWorldGym(Env):
             raise Exception(f'The reward function for a step has to be one of {rsf}. Was "{reward_step_function}"')
         self.reward_step_function = reward_step_function
         self.reward_selection_by_distance = reward_selection_by_distance
+
+        self.images_returned_as_array = images_returned_as_array
 
         ##########################################################
         # The variables defined in the init are placeholders and are only their function is explained here
@@ -164,14 +168,14 @@ class MapWorldGym(Env):
         """
         if self.current_room_name == self.target_room_name:
             self.room_found = 1
-            if not self.reward_selection_by_distance:
+            if not self.reward_selection_by_distance == 'True':
                 reward = self.reward_room_selection
         else:
             self.room_found = 0
-            if not self.reward_selection_by_distance:
+            if not self.reward_selection_by_distance == 'True':
                 reward = self.penalty_room_selection
 
-        if self.reward_selection_by_distance:
+        if self.reward_selection_by_distance == 'True':
             reward = self.get_reward_from_distance()
 
         # Terminate the game
@@ -265,12 +269,17 @@ class MapWorldGym(Env):
 
         Returns: Numpy array, reshaped image, (height, width, channels)
         """
-        # TODO make resizing dependent on aspect ratio of source to prevent distortions
-        image = cv2.imread(image_path)
-        # reshape any grayscale images to rgb
-        if len(np.shape(image)) != 3:
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-        image = cv2.resize(image, image_resolution)
-        image = np.array(image)
+        if self.images_returned_as_array == 'True':
+            # TODO make resizing dependent on aspect ratio of source to prevent distortions
+            image = cv2.imread(image_path)
+            # reshape any grayscale images to rgb
+            if len(np.shape(image)) != 3:
+                image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+            image = cv2.resize(image, image_resolution)
+            image = np.array(image)
+        else:
+            image = Image.open(image_path)
+            if len(np.shape(image)) != 3:
+                image = image.convert('RGB')
 
         return image

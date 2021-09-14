@@ -16,7 +16,8 @@
         "reward_room_selection": 2000.0,
         "penalty_room_selection": -1000.0,
         "reward_selection_by_distance": "True",
-        "reward_step_function": "linear"
+        "reward_step_function": "linear",
+        "images_returned_as_array": "True"
     },
     "REINFORCE": {
         "embedding_model": "paraphrase-MiniLM-L6-v2",
@@ -43,7 +44,7 @@
         "num_layers": 2
     },
     "training": {
-        "batch_size": 32,
+        "batch_size": 4,
         "gamma": 0.99,
         "learning_rate": 0.0005,
         "max_steps": 60,

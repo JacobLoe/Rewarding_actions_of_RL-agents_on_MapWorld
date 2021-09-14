@@ -64,7 +64,8 @@ if __name__ == '__main__':
                       reward_room_selection=mw_params['reward_room_selection'],
                       penalty_room_selection=mw_params['penalty_room_selection'],
                       reward_selection_by_distance=mw_params['reward_selection_by_distance'],
-                      reward_step_function=mw_params['reward_step_function'])
+                      reward_step_function=mw_params['reward_step_function'],
+                      images_returned_as_array=False)
 
     # run the chosen model on MapWorld with the loaded parameters
     if args.model == 'random':
