@@ -5,34 +5,49 @@ from collections import namedtuple
 
 import torch
 import torch.nn as nn
+from torch.nn import DataParallel
 import torch.nn.functional as F
 from torch.distributions import Categorical
+from torchvision import transforms
 
+from utils.distances import load_inception
 from sentence_transformers import SentenceTransformer
-
-from utils.ReplayBuffer import ReplayBuffer, RLDataset
 
 
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
-def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, save_model, gpu, load_model):
+def actor_critic(mwg, model_parameters, training_parameters, base_path,
+                 logger, save_model, gpu, load_model):
+    """
+
+    Args:
+        mwg:
+        model_parameters:
+        training_parameters:
+        base_path:
+        logger:
+        save_model:
+        gpu:
+        load_model:
+
+    Returns:
+
+    """
     running_reward = 10
     SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
     device = torch.device(gpu if torch.cuda.is_available() else "cpu")
     available_actions = mwg.total_available_actions
 
-    emsize = model_parameters['embedding_size']  # embedding size of the bert model
-    max_sequence_length = model_parameters['max_sequence_length']
-    output_size = len(available_actions)
-    num_layers = model_parameters['num_layers']
-    model = ActionModel(emsize,
-                        max_sequence_length,
-                        output_size,
-                        num_layers).to(device)
+    model = DataParallel(ActorCriticModel(model_parameters['embedding_size'], model_parameters['hidden_layer_size'],
+                                          output_size=len(available_actions)).to(device))
 
-    # buffer = ReplayBuffer(training_parameters['replay_size'])
-    # Named tuple for storing experience steps gathered during training
-    # Experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'done', 'new_state'])
+    inception = load_inception(device)
+    preprocess = transforms.Compose([
+        transforms.Resize(299),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
 
     lr = training_parameters['learning_rate']
     num_episodes = int(training_parameters['num_episodes'])
@@ -81,12 +96,13 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
 
         while not done and steps < max_steps:
 
-            im = state['current_room']
-            im = np.reshape(im, (np.shape(im)[2], np.shape(im)[1], np.shape(im)[0]))
+            # preprocess state (image and text)
+            processed_frame = preprocess(state['current_room']).unsqueeze(0).to(device)
+            with torch.no_grad():
+                im = inception(processed_frame).squeeze().cpu().detach().numpy()
             im_tensor = torch.FloatTensor([im])
 
-            text = state['text_state']
-            embeddings = em_model.encode(text)
+            embeddings = em_model.encode(state['text_state'])
             embedded_text_tensor = torch.FloatTensor([embeddings])
 
             action_probabilities, state_value = model(im_tensor.to(device),
@@ -183,65 +199,40 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, logger, 
     return total_rewards, total_steps, hits
 
 
-class ActionModel(nn.Module):
-    def __init__(self, emsize, max_sequence_length, output_size, num_layers):
-        super(ActionModel, self).__init__()
+class ActorCriticModel(nn.Module):
+    def __init__(self, emsize, hidden_layer_size, output_size):
+        super(ActorCriticModel, self).__init__()
         # TODO with the sentence transformer max_sequence_length is not a thing anymore
         # TODO maybe replace it with something else (emsize, etc)
         # TODO https://arxiv.org/pdf/1902.07742.pdf
 
-        # TODO look into padding of input image
-        # CNN
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc_cnn1 = nn.Linear(121104, 1200)   # layer size is result of image res (360x360) after conv + pool
-        self.fc_cnn2 = nn.Linear(1200, max_sequence_length)
+        self.fc_image = nn.Linear(2048, hidden_layer_size)
 
-        # text processing
-        self.lstm1 = nn.LSTM(1, emsize, batch_first=True, num_layers=num_layers)
-        self.fc_lstm = nn.Linear(emsize, max_sequence_length)
+        self.fc_text = nn.Linear(emsize, hidden_layer_size)
 
         # action model
-        self.fc4_action = nn.Linear(max_sequence_length, max_sequence_length)
-        self.fc5_action = nn.Linear(max_sequence_length, output_size)
+        self.fc_action0 = nn.Linear(hidden_layer_size, hidden_layer_size)
+        self.fc_action1 = nn.Linear(hidden_layer_size, output_size)
 
         # value model
-        self.fc4_value = nn.Linear(max_sequence_length, max_sequence_length)
-        self.fc5_value = nn.Linear(max_sequence_length, 1)
+        self.fc_value0 = nn.Linear(hidden_layer_size, hidden_layer_size)
+        self.fc_value1 = nn.Linear(hidden_layer_size, 1)
 
-        # self.init_weights()
+    def forward(self, image, text):
+        image = torch.tanh(self.fc_image(image))
 
-    def forward(self, im, text):
-        cnn = self.pool(F.relu(self.conv1(im)))
-        cnn = self.pool(F.relu(self.conv2(cnn)))
-        cnn = torch.flatten(cnn, 1)     # flatten all dimensions except batch
-        cnn = F.relu(self.fc_cnn1(cnn))
-        cnn = torch.tanh(self.fc_cnn2(cnn))
-
-        text, _ = self.lstm1(text.unsqueeze(-1))
-
-        text = torch.tanh(self.fc_lstm(text))
-        text = torch.mean(text, dim=1)
+        text = torch.tanh(self.fc_text(text))
 
         # combine image and text into one vector
-        output = torch.mul(cnn, text)
+        output = torch.mul(image, text)
 
         # compute the best action for a state
-        actions = F.relu(self.fc4_action(output))
-        actions = self.fc5_action(actions)
+        actions = F.relu(self.fc_action0(output))
+        actions = self.fc_action1(actions)
         actions = F.softmax(actions, dim=1)
 
         # compute the value of being in a state
-        value = F.relu(self.fc4_value(output))
-        value = self.fc5_value(value)
+        value = F.relu(self.fc_value0(output))
+        value = self.fc_value1(value)
 
         return actions, value
-
-    def init_weights(self):
-        # TODO add init for cnn
-        # make initrange a parameter
-        initrange = 0.1
-        # self.encoder.weight.data.uniform_(-initrange, initrange)
-        # self.decoder.bias.data.zero_()
-        # self.decoder.weight.data.uniform_(-initrange, initrange)

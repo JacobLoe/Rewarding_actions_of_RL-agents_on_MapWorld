@@ -22,14 +22,12 @@
     "REINFORCE": {
         "embedding_model": "paraphrase-MiniLM-L6-v2",
         "embedding_size": 384,
-        "max_sequence_length": 32,
-        "num_layers": 2
+        "hidden_layer_size": 50
     },
     "actor_critic": {
         "embedding_model": "paraphrase-MiniLM-L6-v2",
         "embedding_size": 384,
-        "max_sequence_length": 32,
-        "num_layers": 2
+        "hidden_layer_size": 50
     },
     "dqn": {
         "embedding_model": "paraphrase-MiniLM-L6-v2",
@@ -44,7 +42,7 @@
         "num_layers": 2
     },
     "training": {
-        "batch_size": 4,
+        "batch_size": 64,
         "gamma": 0.99,
         "learning_rate": 0.0005,
         "max_steps": 60,

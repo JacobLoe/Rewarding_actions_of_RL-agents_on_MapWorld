@@ -13,10 +13,13 @@ from sentence_transformers import SentenceTransformer
 
 
 # adapted from: https://towardsdatascience.com/learning-reinforcement-learning-reinforce-with-pytorch-5e8ad7fc7da0
-def reinforce(mwg, model_parameters, training_parameters, base_path, logger, save_model, gpu, load_model):
+def reinforce(mwg, model_parameters, training_parameters, base_path,
+              logger, save_model, gpu, load_model):
     """
 
     Args:
+        gpu:
+        load_model:
         save_model:
         model_parameters:
         training_parameters:
@@ -30,18 +33,14 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
     # TODO include flag to turn on/off training, so model doesn't train on eval data
 
     available_actions = mwg.total_available_actions
-    # TODO switch to gym action space
     action_space = np.arange(len(available_actions))
 
     # assign all available gpu devices to pytorch
     device = torch.device(gpu if torch.cuda.is_available() else "cpu")
     logger.debug(f'Device: {device}')
 
-    output_size = len(available_actions)
-    model = DataParallel(RLBaseline(model_parameters['embedding_size'],
-                                    model_parameters['max_sequence_length'],
-                                    output_size,
-                                    model_parameters['num_layers']).to(device))
+    model = DataParallel(RLBaseline(model_parameters['embedding_size'], model_parameters['hidden_layer_size'],
+                                    output_size=len(available_actions)).to(device))
 
     inception = load_inception(device)
     preprocess = transforms.Compose([
@@ -91,7 +90,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
 
     for episode in tqdm(range(starting_episode, num_episodes)):
 
-        s_0 = mwg.reset()
+        state = mwg.reset()
 
         states_image = []
         states_text = []
@@ -102,13 +101,14 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
         steps = 0
 
         while not done and steps < max_steps:
+
             # preprocess state (image and text)
-            processed_frame = preprocess(s_0['current_room']).unsqueeze(0).to(device)
+            processed_frame = preprocess(state['current_room']).unsqueeze(0).to(device)
             with torch.no_grad():
                 im = inception(processed_frame).squeeze().cpu().detach().numpy()
             im_tensor = torch.FloatTensor([im])
 
-            embeddings = em_model.encode(s_0['text_state'])
+            embeddings = em_model.encode(state['text_state'])
             embedded_text_tensor = torch.FloatTensor([embeddings])
 
             logger.debug(embedded_text_tensor)
@@ -117,14 +117,13 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
             action_probabilities = action_probabilities.cpu().detach().numpy()[0]
             action = np.random.choice(action_space, p=action_probabilities)
 
-            s_1, reward, done, room_found = mwg.step(action)
+            state, reward, done, room_found = mwg.step(action)
 
             states_image.append(im)
             states_text.append(embeddings)
             rewards.append(reward)
             actions.append(action)
 
-            s_0 = s_1
             steps += 1
             if done or steps >= max_steps:
                 # save the results for the episode
@@ -149,7 +148,6 @@ def reinforce(mwg, model_parameters, training_parameters, base_path, logger, sav
                     inputs_tensor = torch.FloatTensor(batch_states_text).to(device)
                     reward_tensor = torch.FloatTensor(batch_rewards).to(device)
                     action_tensor = torch.LongTensor(batch_actions).to(device)
-                    # print('im_tensor', im_tensor.size())
 
                     logprob = torch.log(model(im_tensor, inputs_tensor))
                     selected_logprobs = reward_tensor * torch.gather(logprob, 1, action_tensor.unsqueeze(1)).squeeze()
@@ -197,28 +195,30 @@ def discount_rewards(rewards, gamma=0.99):
 
 
 class RLBaseline(nn.Module):
-    def __init__(self, emsize, max_sequence_length, output_size, num_layers):
+    def __init__(self, emsize, hidden_layer_size, output_size):
         super(RLBaseline, self).__init__()
 
         # TODO with the sentence transformer max_sequence_length is not a thing anymore
         # TODO maybe replace it with something else (emsize, etc)
         # TODO https://arxiv.org/pdf/1902.07742.pdf
 
-        self.fc_cnn2 = nn.Linear(2048, max_sequence_length)
+        self.fc_image = nn.Linear(2048, hidden_layer_size)
 
-        self.fc_lstm = nn.Linear(emsize, max_sequence_length)
+        self.fc_text = nn.Linear(emsize, hidden_layer_size)
 
-        self.fc4 = nn.Linear(max_sequence_length, max_sequence_length)
-        self.fc5 = nn.Linear(max_sequence_length, output_size)
+        self.fc0 = nn.Linear(hidden_layer_size, hidden_layer_size)
+        self.fc1 = nn.Linear(hidden_layer_size, output_size)
 
-    def forward(self, im, text):
+    def forward(self, image, text):
+        image = torch.tanh(self.fc_image(image))
 
-        cnn = torch.tanh(self.fc_cnn2(im))
-        # text, _ = self.lstm1(text.unsqueeze(-1))
-        text = torch.tanh(self.fc_lstm(text))
-        # text = torch.mean(text, dim=1)
-        output = torch.mul(cnn, text)
+        text = torch.tanh(self.fc_text(text))
+
+        # combine image and text into one vector
+        output = torch.mul(image, text)
+
         output = F.relu(self.fc4(output))
         output = self.fc5(output)
+
         actions = F.softmax(output, dim=1)
         return actions
