@@ -6,3 +6,4 @@ im2txt/checkpoints/
 *.pt
 utils/dists.html
 lightning_logs
+/runs
