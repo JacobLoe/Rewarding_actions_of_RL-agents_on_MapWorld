@@ -206,15 +206,17 @@ class ActorCriticModel(nn.Module):
         # TODO maybe replace it with something else (emsize, etc)
         # TODO https://arxiv.org/pdf/1902.07742.pdf
 
-        self.fc_image = nn.Linear(2048, hidden_layer_size)
+        self.fc_image = nn.Linear(2048, 2*hidden_layer_size)
 
-        self.fc_text = nn.Linear(emsize, hidden_layer_size)
+        self.fc_text = nn.Linear(emsize, 2*hidden_layer_size)
 
         # action model
+        self.fc_action = nn.Linear(2*hidden_layer_size, hidden_layer_size)
         self.fc_action0 = nn.Linear(hidden_layer_size, hidden_layer_size)
         self.fc_action1 = nn.Linear(hidden_layer_size, output_size)
 
         # value model
+        self.fc_value = nn.Linear(2*hidden_layer_size, hidden_layer_size)
         self.fc_value0 = nn.Linear(hidden_layer_size, hidden_layer_size)
         self.fc_value1 = nn.Linear(hidden_layer_size, 1)
 
@@ -227,12 +229,14 @@ class ActorCriticModel(nn.Module):
         output = torch.mul(image, text)
 
         # compute the best action for a state
-        actions = F.relu(self.fc_action0(output))
+        actions = F.relu(self.fc_action(output))
+        actions = F.relu(self.fc_action0(actions))
         actions = self.fc_action1(actions)
         actions = F.softmax(actions, dim=1)
 
         # compute the value of being in a state
-        value = F.relu(self.fc_value0(output))
+        value = F.relu(self.fc_value(output))
+        value = F.relu(self.fc_value0(value))
         value = self.fc_value1(value)
 
         return actions, value

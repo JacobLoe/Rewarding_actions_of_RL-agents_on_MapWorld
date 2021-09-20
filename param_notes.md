@@ -42,6 +42,11 @@ In this case it defines the difference between the maximum and minimum reward.
 
 A `batch_size` of 32 is the (stable) maximum for Actor-Critic.
 
+# new architecture (16.09.2021)
+
+actor-critic 4M episodes, 128 batch size ~ 71 hours of training
+
+# old architecure training time
 For REINFORCE and Actor-Critic 400k episodes lead to around 25 hours of training. 
 1M episodes to around 67 hours.
 2M episodes to around 97 hours (for Actor-Critic).

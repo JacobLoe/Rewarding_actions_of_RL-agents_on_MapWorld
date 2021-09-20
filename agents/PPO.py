@@ -352,8 +352,8 @@ def main():
     ######################################
     # Training Environment configuration
     # env_name = "Reacher-v2"
-    env_name = "LunarLander-v2"
-    # env_name = "CartPole-v0"
+    # env_name = "LunarLander-v2"
+    env_name = "CartPole-v0"
     num_agents = 2
     max_timestep = 300  # per episode the agent is allowed to take
     update_timestep = 2000  # total number of steps to take before update
@@ -367,8 +367,8 @@ def main():
     # gets the parameter about the environment
     sample_env = gym.make(env_name)
     state_dim = sample_env.observation_space.shape[0]
-    action_dim = 4
-    # action_dim = sample_env.action_space.n
+    # action_dim = 4
+    action_dim = sample_env.action_space.n
     print("#################################")
     print(env_name)
     print("Number of Agents: {}".format(num_agents))
