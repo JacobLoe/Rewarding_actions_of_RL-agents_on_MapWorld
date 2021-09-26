@@ -19,7 +19,6 @@ from torch.distributions import Categorical
 from torch.utils.tensorboard import SummaryWriter
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# device = "cpu"
 tb_writer = SummaryWriter()
 mp.set_start_method('spawn', True)
 
@@ -352,8 +351,8 @@ def main():
     ######################################
     # Training Environment configuration
     # env_name = "Reacher-v2"
-    # env_name = "LunarLander-v2"
-    env_name = "CartPole-v0"
+    env_name = "LunarLander-v2"
+    # env_name = "CartPole-v0"
     num_agents = 2
     max_timestep = 300  # per episode the agent is allowed to take
     update_timestep = 2000  # total number of steps to take before update
