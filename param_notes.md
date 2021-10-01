@@ -44,7 +44,7 @@ A `batch_size` of 32 is the (stable) maximum for Actor-Critic.
 
 # new architecture (16.09.2021)
 
-actor-critic 4M episodes, 128 batch size ~ 71 hours of training
+actor-critic, inception + sentence embeddings, data-parallel, 4M episodes, 128 batch size ~ 71 hours of training
 
 # old architecure training time
 For REINFORCE and Actor-Critic 400k episodes lead to around 25 hours of training. 

@@ -8,46 +8,25 @@ import torch.nn as nn
 from torch.nn import DataParallel
 import torch.nn.functional as F
 from torch.distributions import Categorical
-from torchvision import transforms
 
-from utils.distances import load_inception
-from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer, BertModel
 
 
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
-def actor_critic(mwg, model_parameters, training_parameters, base_path,
-                 logger, save_model, gpu, load_model):
-    """
-
-    Args:
-        mwg:
-        model_parameters:
-        training_parameters:
-        base_path:
-        logger:
-        save_model:
-        gpu:
-        load_model:
-
-    Returns:
-
-    """
+def ac_IRL(mwg, model_parameters, training_parameters, base_path, save_model, gpu, load_model):
     running_reward = 10
     SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
     device = torch.device(gpu if torch.cuda.is_available() else "cpu")
     available_actions = mwg.total_available_actions
 
-    model = DataParallel(ActorCriticModel(model_parameters['embedding_size'], model_parameters['hidden_layer_size'],
-                                          output_size=len(available_actions)).to(device))
-
-    inception = load_inception(device)
-    preprocess = transforms.Compose([
-        transforms.Resize(299),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
+    max_sequence_length = model_parameters['max_sequence_length']
+    output_size = len(available_actions)
+    num_layers = model_parameters['num_layers']
+    model = DataParallel(ActorCriticModel(model_parameters['embedding_size'],
+                                          max_sequence_length,
+                                          output_size,
+                                          num_layers)).to(device)
 
     lr = training_parameters['learning_rate']
     num_episodes = int(training_parameters['num_episodes'])
@@ -59,7 +38,10 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path,
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    em_model = SentenceTransformer(model_parameters['sentence_embedding_model'])
+    tokenizer = AutoTokenizer.from_pretrained(model_parameters['word_embedding_model'])
+    # # TODO use a model which produces embeddings <786
+    # # TODO get size of the embeddings directly from the model
+    bert_embeddings = BertModel.from_pretrained(model_parameters['word_embedding_model'])
 
     eps = np.finfo(np.float32).eps.item()
 
@@ -96,18 +78,20 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path,
 
         while not done and steps < max_steps:
 
-            # preprocess state (image and text)
-            processed_frame = preprocess(state['current_room']).unsqueeze(0).to(device)
-            with torch.no_grad():
-                im = inception(processed_frame).squeeze().cpu().detach().numpy()
+            im = state['current_room']
+            im = np.reshape(im, (np.shape(im)[2], np.shape(im)[1], np.shape(im)[0]))
             im_tensor = torch.FloatTensor([im])
 
-            embeddings = em_model.encode(state['text_state'])
-            embedded_text_tensor = torch.FloatTensor([embeddings])
+            text = state['text_state']
+            text_tokens = tokenizer.encode_plus(text, padding='max_length',
+                                                max_length=max_sequence_length,
+                                                add_special_tokens=True)
+            text_tokens_tensor = torch.LongTensor(text_tokens['input_ids']).unsqueeze(0)
+
+            word_embeddings = bert_embeddings(text_tokens_tensor)[0][0]
 
             action_probabilities, state_value = model(im_tensor.to(device),
-                                                      embedded_text_tensor.to(device))
-            logger.debug('action_probabilities', action_probabilities)
+                                                      word_embeddings.to(device))
 
             # create a categorical distribution over the list of probabilities of actions
             m = Categorical(action_probabilities)
@@ -200,43 +184,54 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path,
 
 
 class ActorCriticModel(nn.Module):
-    def __init__(self, emsize, hidden_layer_size, output_size):
+    def __init__(self, emsize, max_sequence_length, output_size, num_layers):
         super(ActorCriticModel, self).__init__()
         # TODO with the sentence transformer max_sequence_length is not a thing anymore
         # TODO maybe replace it with something else (emsize, etc)
         # TODO https://arxiv.org/pdf/1902.07742.pdf
 
-        self.fc_image = nn.Linear(2048, 2*hidden_layer_size)
+        # TODO look into padding of input image
+        # CNN
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc_cnn1 = nn.Linear(121104, 1200)   # layer size is result of image res (360x360) after conv + pool
+        self.fc_cnn2 = nn.Linear(1200, max_sequence_length)
 
-        self.fc_text = nn.Linear(emsize, 2*hidden_layer_size)
+        # text processing
+        self.lstm1 = nn.LSTM(1, emsize, batch_first=True, num_layers=num_layers)
+        self.fc_lstm = nn.Linear(emsize, max_sequence_length)
 
         # action model
-        self.fc_action = nn.Linear(2*hidden_layer_size, hidden_layer_size)
-        self.fc_action0 = nn.Linear(hidden_layer_size, hidden_layer_size)
-        self.fc_action1 = nn.Linear(hidden_layer_size, output_size)
+        self.fc4_action = nn.Linear(max_sequence_length, max_sequence_length)
+        self.fc5_action = nn.Linear(max_sequence_length, output_size)
 
         # value model
-        self.fc_value = nn.Linear(2*hidden_layer_size, hidden_layer_size)
-        self.fc_value0 = nn.Linear(hidden_layer_size, hidden_layer_size)
-        self.fc_value1 = nn.Linear(hidden_layer_size, 1)
+        self.fc4_value = nn.Linear(max_sequence_length, max_sequence_length)
+        self.fc5_value = nn.Linear(max_sequence_length, 1)
 
-    def forward(self, image, text):
-        image = torch.tanh(self.fc_image(image))
+    def forward(self, im, text):
+        cnn = self.pool(F.relu(self.conv1(im)))
+        cnn = self.pool(F.relu(self.conv2(cnn)))
+        cnn = torch.flatten(cnn, 1)     # flatten all dimensions except batch
+        cnn = F.relu(self.fc_cnn1(cnn))
+        cnn = torch.tanh(self.fc_cnn2(cnn))
 
-        text = torch.tanh(self.fc_text(text))
-
+        text, _ = self.lstm1(text.unsqueeze(-1))
+        text = torch.tanh(self.fc_lstm(text))
+        text = torch.mean(text, dim=1)
         # combine image and text into one vector
-        output = torch.mul(image, text)
+        output = torch.mul(cnn, text)
+        output = torch.mean(output, dim=1)
 
         # compute the best action for a state
-        actions = F.relu(self.fc_action(output))
-        actions = F.relu(self.fc_action0(actions))
-        actions = self.fc_action1(actions)
-        actions = F.softmax(actions, dim=1)
+        actions = F.relu(self.fc4_action(output))
+        actions = self.fc5_action(actions)
+
+        actions = F.softmax(actions, dim=0)
 
         # compute the value of being in a state
-        value = F.relu(self.fc_value(output))
-        value = F.relu(self.fc_value0(value))
-        value = self.fc_value1(value)
+        value = F.relu(self.fc4_value(output))
+        value = self.fc5_value(value)
 
         return actions, value

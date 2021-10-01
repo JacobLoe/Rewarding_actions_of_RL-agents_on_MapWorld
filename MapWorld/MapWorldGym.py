@@ -37,6 +37,7 @@ class MapWorldGym(Env):
 
         with open(captions, 'r') as f:  # max length of caption 213
             self.dict_captions = json.load(f)
+
         #
         self.ade_path = ade_path
 
@@ -45,6 +46,7 @@ class MapWorldGym(Env):
         self.done = False
         self.room_found = 0
 
+        # TODO remove, are not needed
         # keep track of the total steps taken and the return
         self.model_return = 0
         self.model_steps = 0
@@ -168,6 +170,7 @@ class MapWorldGym(Env):
         """
         if self.current_room_name == self.target_room_name:
             self.room_found = 1
+            # TODO move reward if condition
             if not self.reward_selection_by_distance == 'True':
                 reward = self.reward_room_selection
         else:
@@ -257,6 +260,7 @@ class MapWorldGym(Env):
 
         caption_key = path.split(target_room)[1].strip('.jpg')
         target_caption = self.dict_captions[caption_key]
+
         return target_caption, target_room
 
     def load_image(self, image_path, image_resolution):
@@ -276,6 +280,7 @@ class MapWorldGym(Env):
             if len(np.shape(image)) != 3:
                 image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
             image = cv2.resize(image, image_resolution)
+
             image = np.array(image)
         else:
             image = Image.open(image_path)

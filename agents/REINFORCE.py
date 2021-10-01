@@ -64,7 +64,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path,
 
     # TODO increase em model sentence max length
     # TODO look into what the model was trained on. How does it deal with multiple sentences ?
-    em_model = SentenceTransformer(model_parameters['embedding_model'])
+    em_model = SentenceTransformer(model_parameters['sentence_embedding_model'])
 
     ck_path = os.path.join(base_path, 'checkpoint.pt')
 

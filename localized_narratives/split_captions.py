@@ -37,25 +37,18 @@ if __name__ == '__main__':
         with open(caption_path, 'r') as f:
             lines = [s.strip('\n') for s in f.readlines()]
             image_name = os.path.split(caption_path)[1].strip('.txt')
-            if len(lines)!=0:
+            if len(lines) != 0:
                 if len(lines[0].split()) == 236:
                     split_captions[image_name] = ['One person standing']
-                    print(lines[0])
                 else:
                     split_captions[image_name] = lines
             else:
                 split_captions[image_name] = localized_narratives[image_name]
 
-    # i = 0
-    # for k in tqdm(split_captions):
-    #     try:
-    #         print(split_captions[k][0])
-    #     except:
-    #         # print(split_captions[k])
-    #         # print(localized_narratives[k])
-    #         # break
-    #         i+=1
-    # print(i)
+    for k in tqdm(split_captions):
+        f = len(split_captions[k][0].split())
+        if f == 1:
+            print(split_captions[k])
 
     print('split captions')
     c = [len(split_captions[k][0].split()) for k in split_captions]
@@ -63,6 +56,6 @@ if __name__ == '__main__':
     print(f'Max caption length {np.max(c)}')
     print(f'Mean caption length {np.mean(c)}')
 
-    with open(args.out_path, 'w') as f:
-        json.dump(split_captions, f, sort_keys=True)
+    # with open(args.out_path, 'w') as f:
+    #     json.dump(split_captions, f, sort_keys=True)
 

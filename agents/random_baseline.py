@@ -3,7 +3,7 @@ from tqdm import tqdm
 from time import time
 
 
-def random_baseline(mapgame, logger, episodes=200000, max_steps=50):
+def random_baseline(mapgame, episodes=200000, max_steps=50):
     """
 
     Args:
@@ -17,11 +17,14 @@ def random_baseline(mapgame, logger, episodes=200000, max_steps=50):
     model_return = []
     model_steps = []
     hits = []
-    for _ in tqdm(range(episodes)):
+    for _ in tqdm(range(int(episodes))):
 
         t_r = time()
-        _ = mapgame.reset()
-        logger.debug(f'Time for env reset {time() - t_r}')
+        s = mapgame.reset()
+        print(s['text_state'])
+
+        print('-----------------------')
+        print(f'Time for env reset {time() - t_r}')
         available_actions = mapgame.total_available_actions
         done = False
         steps = 0
@@ -29,14 +32,14 @@ def random_baseline(mapgame, logger, episodes=200000, max_steps=50):
             t_s = time()
             action = np.random.randint(0, len(available_actions))
             _, _, done, room_found = mapgame.step(action)
-
-            logger.debug(f'Time for env step {time()-t_s}')
+            print(f'Time for env step {time()-t_s}')
             steps += 1
         t_a = time()
         model_return.append(mapgame.model_return)
         model_steps.append(mapgame.model_steps)
         hits.append(room_found)
-        logger.debug(f'Time for append {time()-t_a}')
-        logger.debug(f'Time for an episode {time()-t_r} \n')
+        print(f'Time for append {time()-t_a}')
+        print(f'Time for an episode {time()-t_r} \n')
+        break
 
     return model_return, model_steps, hits

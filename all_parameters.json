@@ -20,25 +20,17 @@
         "images_returned_as_array": "True"
     },
     "REINFORCE": {
-        "embedding_model": "paraphrase-MiniLM-L6-v2",
+        "sentence_embedding_model": "paraphrase-MiniLM-L6-v2",
+        "word_embedding_model": "bert-base-uncased",
         "embedding_size": 384,
         "hidden_layer_size": 50
     },
     "actor_critic": {
-        "embedding_model": "paraphrase-MiniLM-L6-v2",
+        "sentence_embedding_model": "paraphrase-MiniLM-L6-v2",
+        "word_embedding_model": "bert-base-uncased",
         "embedding_size": 384,
-        "hidden_layer_size": 50
-    },
-    "dqn": {
-        "embedding_model": "paraphrase-MiniLM-L6-v2",
-        "embedding_size": 384,
-        "max_sequence_length": 32,
-        "num_layers": 2
-    },
-    "hdqn": {
-        "embedding_model": "paraphrase-MiniLM-L6-v2",
-        "embedding_size": 384,
-        "max_sequence_length": 32,
+        "hidden_layer_size": 50,
+        "max_sequence_length": 213,
         "num_layers": 2
     },
     "training": {

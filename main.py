@@ -1,4 +1,4 @@
-from agents import random_baseline, reinforce, actor_critic
+from agents import random_baseline, reinforce, actor_critic, ac_IRL
 from MapWorld import MapWorldGym
 from utils import save_parameters, save_results
 import numpy as np
@@ -20,7 +20,7 @@ logger.propagate = False    # prevents log messages from appearing twice
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", choices=['random', 'reinforce', 'ac', 'hdqn'],
+    parser.add_argument("model", choices=['random', 'reinforce', 'ac', 'ac_IRL'],
                         help="Decide which model is to be run")
     parser.add_argument("--base_path", default="results",
                         help="Path where results, checkpoints and parameters are saved to")
@@ -65,7 +65,7 @@ if __name__ == '__main__':
                       penalty_room_selection=mw_params['penalty_room_selection'],
                       reward_selection_by_distance=mw_params['reward_selection_by_distance'],
                       reward_step_function=mw_params['reward_step_function'],
-                      images_returned_as_array=False)
+                      images_returned_as_array=mw_params['images_returned_as_array'])
 
     # run the chosen model on MapWorld with the loaded parameters
     if args.model == 'random':
@@ -73,7 +73,7 @@ if __name__ == '__main__':
                       'MapWorld': mw_params}
         if args.save_results:
             save_parameters(parameters, args.base_path)
-        model_return, model_steps, model_hits = random_baseline(mwg, logger,
+        model_return, model_steps, model_hits = random_baseline(mwg,
                                                                 episodes=parameters['training']['num_episodes'],
                                                                 max_steps=parameters['training']['num_episodes'])
         if args.save_results:
@@ -113,13 +113,21 @@ if __name__ == '__main__':
                                                              load_model=args.load_model)
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
-    elif args.model == 'hdqn':
-        parameters = {'hdqn': parameters['hdqn'],
+    elif args.model == 'ac_IRL':
+        parameters = {'actor_critic': parameters['actor_critic'],
                       'training': parameters['training'],
                       'MapWorld': mw_params}
-        main(mwg,
-             parameters['dqn'],
-             parameters['training'])
+        if args.save_results:
+            save_parameters(parameters, args.base_path)
+        model_return, model_steps, model_hits = ac_IRL(mwg,
+                                                       parameters['actor_critic'],
+                                                       parameters['training'],
+                                                       base_path=args.base_path,
+                                                       save_model=args.save_model,
+                                                       gpu=args.gpu,
+                                                       load_model=args.load_model)
+        if args.save_results:
+            save_results(model_return, model_steps, model_hits, args.base_path)
     print('\n-------------------')
     print('Mean return: ', np.mean(model_return))
     print('-------------------')
