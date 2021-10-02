@@ -20,7 +20,7 @@ logger.propagate = False    # prevents log messages from appearing twice
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", choices=['random', 'reinforce', 'ac', 'ac_IRL'],
+    parser.add_argument("model", choices=['random', 'reinforce', 'ac', 'ac_irl'],
                         help="Decide which model is to be run")
     parser.add_argument("--base_path", default="results",
                         help="Path where results, checkpoints and parameters are saved to")
@@ -113,7 +113,7 @@ if __name__ == '__main__':
                                                              load_model=args.load_model)
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
-    elif args.model == 'ac_IRL':
+    elif args.model == 'ac_irl':
         parameters = {'actor_critic': parameters['actor_critic'],
                       'training': parameters['training'],
                       'MapWorld': mw_params}

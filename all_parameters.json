@@ -28,8 +28,8 @@
     "actor_critic": {
         "sentence_embedding_model": "paraphrase-MiniLM-L6-v2",
         "word_embedding_model": "bert-base-uncased",
-        "embedding_size": 384,
-        "hidden_layer_size": 50,
+        "embedding_size": 786,
+        "hidden_layer_size": 100,
         "max_sequence_length": 213,
         "num_layers": 2
     },
