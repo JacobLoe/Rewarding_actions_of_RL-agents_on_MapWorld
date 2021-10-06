@@ -60,6 +60,7 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path,
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     em_model = SentenceTransformer(model_parameters['sentence_embedding_model'])
+    em_model.max_seq_length = model_parameters['max_sequence_length']
 
     eps = np.finfo(np.float32).eps.item()
 

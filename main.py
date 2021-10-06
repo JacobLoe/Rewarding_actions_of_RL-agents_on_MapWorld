@@ -114,7 +114,7 @@ if __name__ == '__main__':
         if args.save_results:
             save_results(model_return, model_steps, model_hits, args.base_path)
     elif args.model == 'ac_irl':
-        parameters = {'actor_critic': parameters['actor_critic'],
+        parameters = {'actor_critic': parameters['ac_IRL'],
                       'training': parameters['training'],
                       'MapWorld': mw_params}
         if args.save_results:
