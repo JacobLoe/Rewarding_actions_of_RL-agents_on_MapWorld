@@ -222,7 +222,6 @@ class ActorCriticModel(nn.Module):
 
         # combine image and text into one vector
         output = torch.mul(cnn, text)
-        output = torch.mean(output, dim=1)
 
         # compute the best action for a state
         actions = F.relu(self.fc4_action(output))

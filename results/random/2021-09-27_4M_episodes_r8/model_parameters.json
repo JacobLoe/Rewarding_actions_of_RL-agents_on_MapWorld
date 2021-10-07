@@ -19,6 +19,9 @@
         "room_repetitions": 2,
         "room_types": 2
     },
+    "random": {
+
+    },
     "training": {
         "batch_size": 128,
         "checkpoint_frequency": 20000,
