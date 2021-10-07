@@ -14,17 +14,15 @@ from transformers import AutoTokenizer, BertModel
 
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
 def ac_IRL(mwg, model_parameters, training_parameters, base_path, save_model, gpu, load_model):
-    running_reward = 10
     SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
     device = torch.device(gpu if torch.cuda.is_available() else "cpu")
     available_actions = mwg.total_available_actions
 
-    output_size = len(available_actions)
     model = DataParallel(ActorCriticModel(model_parameters['embedding_size'],
                                           model_parameters['hidden_layer_size'],
                                           model_parameters['num_layers'],
-                                          output_size)).to(device)
+                                          output_size=len(available_actions))).to(device)
 
     lr = training_parameters['learning_rate']
     num_episodes = int(training_parameters['num_episodes'])
@@ -119,10 +117,6 @@ def ac_IRL(mwg, model_parameters, training_parameters, base_path, save_model, gp
                 batch_counter += 1
                 if batch_counter == batch_size:
 
-                    # TODO ignore for now
-                    # update cumulative reward
-                    # running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
-
                     # perform backprop
                     R = 0
                     policy_losses = []  # list to save actor (policy) loss
@@ -165,11 +159,6 @@ def ac_IRL(mwg, model_parameters, training_parameters, base_path, save_model, gp
                     batch_rewards = []
                     batch_actions = []
                     batch_counter = 0
-
-                    # log results
-                    # if episode % args.log_interval == 0:
-                    #     print('Episode {}\tLast reward: {:.2f}\tAverage reward: {:.2f}'.format(
-                    #           episode, ep_reward, running_reward))
 
         # save the progress of the training every checkpoint_frequency episodes
         if episode % checkpoint_frequency == 0 and save_model:

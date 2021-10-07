@@ -32,13 +32,13 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path,
     Returns:
 
     """
-    running_reward = 10
     SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
     device = torch.device(gpu if torch.cuda.is_available() else "cpu")
     available_actions = mwg.total_available_actions
 
-    model = DataParallel(ActorCriticModel(model_parameters['embedding_size'], model_parameters['hidden_layer_size'],
+    model = DataParallel(ActorCriticModel(model_parameters['embedding_size'],
+                                          model_parameters['hidden_layer_size'],
                                           output_size=len(available_actions)).to(device))
 
     inception = load_inception(device)
@@ -46,8 +46,7 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path,
         transforms.Resize(299),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),])
 
     lr = training_parameters['learning_rate']
     num_episodes = int(training_parameters['num_episodes'])
@@ -137,10 +136,6 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path,
                 batch_counter += 1
                 if batch_counter == batch_size:
 
-                    # TODO ignore for now
-                    # update cumulative reward
-                    # running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
-
                     # perform backprop
                     R = 0
                     policy_losses = []  # list to save actor (policy) loss
@@ -183,11 +178,6 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path,
                     batch_rewards = []
                     batch_actions = []
                     batch_counter = 0
-
-                    # log results
-                    # if episode % args.log_interval == 0:
-                    #     print('Episode {}\tLast reward: {:.2f}\tAverage reward: {:.2f}'.format(
-                    #           episode, ep_reward, running_reward))
 
         # save the progress of the training every checkpoint_frequency episodes
         if episode % checkpoint_frequency == 0 and save_model:
