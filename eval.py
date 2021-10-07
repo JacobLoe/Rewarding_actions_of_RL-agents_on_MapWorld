@@ -16,18 +16,18 @@ if __name__ == '__main__':
                         help='Use --save_plots '' to show the plots in the browser')
     parser.add_argument('--filter_return', type=bool, default=True,
                         help='Sets whether to apply a moving average to the return of the model')
-    parser.add_argument('--filter_size', type=int, default=5000, help='Sets the size of the moving average filter')
+    parser.add_argument('--filter_size', type=int, default=50000, help='Sets the size of the moving average filter')
     args = parser.parse_args()
 
     if args.base_path:
         print(f'Creating plots {args.base_path}')
 
-        model_return, model_steps, model_hits, num_episodes, plot_base_path = get_data(args.base_path)
+        model_return, model_steps, model_hits, num_episodes, plot_base_path, model_name = get_data(args.base_path)
 
         if not os.path.isdir(plot_base_path):
             os.makedirs(plot_base_path)
 
-        create_all_plots(model_return, model_steps, model_hits, num_episodes, plot_base_path,
+        create_all_plots(model_name, model_return, model_steps, model_hits, num_episodes, plot_base_path,
                          args.save_plots, args.filter_return, args.filter_size, args.save_html)
     else:
         results_paths = glob.glob('results/**/*.json', recursive=True)
@@ -35,10 +35,10 @@ if __name__ == '__main__':
         for rp in results_paths:
             base_path = os.path.split(rp)[0]
             print(f'Creating plots {base_path}')
-            model_return, model_steps, model_hits, num_episodes, plot_base_path = get_data(base_path)
+            model_return, model_steps, model_hits, num_episodes, plot_base_path, model_name = get_data(base_path)
 
             if not os.path.isdir(plot_base_path):
                 os.makedirs(plot_base_path)
 
-            create_all_plots(model_return, model_steps, model_hits, num_episodes, plot_base_path,
+            create_all_plots(model_name, model_return, model_steps, model_hits, num_episodes, plot_base_path,
                              args.save_plots, args.filter_return, args.filter_size, args.save_html)

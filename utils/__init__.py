@@ -1,3 +1,3 @@
-# TODO remove imports from init
-from .utils import save_parameters, save_results, get_data, preprocess_mapworld_state
-from .plots import create_figure, create_histogram, create_all_plots
+# TODO remove imports from initcreate
+from .utils import save_parameters, save_results, preprocess_mapworld_state
+from .plots import create_all_plots, get_data, create_histogram

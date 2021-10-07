@@ -41,6 +41,9 @@
         "max_sequence_length": 213,
         "num_layers": 2
     },
+    "random": {
+
+    },
     "training": {
         "batch_size": 64,
         "gamma": 0.99,
