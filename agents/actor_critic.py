@@ -42,11 +42,10 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path,
                                           output_size=len(available_actions)).to(device))
 
     inception = load_inception(device)
-    preprocess = transforms.Compose([
-        transforms.Resize(299),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),])
+    preprocess_pil_image = transforms.Compose([transforms.Resize(299),
+                                               transforms.RandomHorizontalFlip(),
+                                               transforms.ToTensor(),
+                                               transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), ])
 
     lr = training_parameters['learning_rate']
     num_episodes = int(training_parameters['num_episodes'])
@@ -97,7 +96,7 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path,
         while not done and steps < max_steps:
 
             # preprocess state (image and text)
-            processed_frame = preprocess(state['current_room']).unsqueeze(0).to(device)
+            processed_frame = preprocess_pil_image(state['current_room']).unsqueeze(0).to(device)
             with torch.no_grad():
                 im = inception(processed_frame).squeeze().cpu().detach().numpy()
             im_tensor = torch.FloatTensor([im])
