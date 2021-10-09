@@ -17,6 +17,7 @@ if __name__ == '__main__':
     parser.add_argument('--filter_return', type=bool, default=True,
                         help='Sets whether to apply a moving average to the return of the model')
     parser.add_argument('--filter_size', type=int, default=50000, help='Sets the size of the moving average filter')
+    parser.add_argument('--split', type=int, default=100, help='Defines how often the accuracy is calculated ...')
     args = parser.parse_args()
 
     if args.base_path:
@@ -28,7 +29,7 @@ if __name__ == '__main__':
             os.makedirs(plot_base_path)
 
         create_all_plots(model_name, model_return, model_steps, model_hits, num_episodes, plot_base_path,
-                         args.save_plots, args.filter_return, args.filter_size, args.save_html)
+                         args.save_plots, args.filter_return, args.filter_size, args.save_html, args.split)
     else:
         results_paths = glob.glob('results/**/*.json', recursive=True)
 

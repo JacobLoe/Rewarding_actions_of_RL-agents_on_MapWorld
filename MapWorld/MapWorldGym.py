@@ -206,6 +206,7 @@ class MapWorldGym(Env):
                 reward = self.reward_linear_step * self.model_steps
             elif self.reward_step_function == 'logistic':
                 # reward increasing with logistic function
+                # TODO explain the boundaries for sigmoid
                 reward = self.reward_logistic_step / (1 + np.exp(-self.model_steps + 11))
 
             state = self.mw.upd(action)

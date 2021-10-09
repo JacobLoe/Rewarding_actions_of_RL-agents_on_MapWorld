@@ -28,7 +28,32 @@ def get_data(base_path):
     return model_return, model_steps, model_hits, num_episodes, plot_base_path, model_name
 
 
-def create_histogram(data, title, plot_path='', save_plot=False, save_html=False):
+def plot_accuracy(model_hits, split=100, plot_path='', save_plot=True, save_html=False):
+    accuracy = np.sum(model_hits)/(len(model_hits))
+
+    split_model_hits = np.array_split(model_hits, split)
+    split_size = len(split_model_hits[0])
+    accuracy_per_split = [np.sum(x)/len(x) for x in split_model_hits]
+
+    title = f'Accuracy per length {split_size} chunks. Total accuracy: {accuracy}'
+    x_axis_label = 'chunk'
+    y_axis_label = 'accuracy per chunk'
+
+    fig = px.line(x=range(len(split_model_hits)),
+                  y=accuracy_per_split,
+                  title=title)
+    fig.update_xaxes(title_text=x_axis_label)
+    fig.update_yaxes(title_text=y_axis_label)
+    if save_plot:
+        fig.write_image(plot_path)
+        if save_html:
+            html_path = plot_path[:-4] + '.html'
+            fig.write_html(html_path)
+    else:
+        fig.show()
+
+
+def create_histogram(data, title, plot_path='', save_plot=True, save_html=False):
     """
 
     Args:
@@ -103,8 +128,8 @@ def steps_over_episodes(model_steps, model_name, plot_path,
     """
 
     title = f'Steps of {model_name} for every episode'
-    x_axis_label = 'Steps'
-    y_axis_label = 'Steps'
+    x_axis_label = 'episode'
+    y_axis_label = 'Steps per episode'
     fig = px.line(x=np.cumsum(model_steps),
                   y=model_steps,
                   title=title,
@@ -121,7 +146,7 @@ def steps_over_episodes(model_steps, model_name, plot_path,
 
 
 def create_all_plots(model_name, model_return, model_steps, model_hits, num_episodes,
-                     plot_base_path, save_plots, filter_return, filter_size, save_html):
+                     plot_base_path, save_plots, filter_return, filter_size, save_html, split):
     """
 
     Args:
@@ -153,4 +178,7 @@ def create_all_plots(model_name, model_return, model_steps, model_hits, num_epis
                          filter_return=filter_return, size=filter_size, save_html=save_html)
 
     plot_path = os.path.join(plot_base_path, 'steps_over_episodes.png')
-    steps_over_episodes(model_steps, model_name, plot_path, save_html=save_html)
+    steps_over_episodes(model_steps, model_name, plot_path, save_plot=save_plots, save_html=save_html)
+
+    plot_path = os.path.join(plot_base_path, 'accuracy.png')
+    plot_accuracy(model_hits, split, plot_path, save_plot=save_plots, save_html=save_html)
