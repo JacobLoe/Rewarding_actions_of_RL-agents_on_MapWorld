@@ -9,22 +9,20 @@ from torch.nn import DataParallel
 import torch.nn.functional as F
 from torch.distributions import Categorical
 
-from transformers import AutoTokenizer, BertModel
+from sentence_transformers import SentenceTransformer
 
 
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
 def ac_IRL(mwg, model_parameters, training_parameters, base_path, save_model, gpu, load_model):
-    running_reward = 10
     SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
     device = torch.device(gpu if torch.cuda.is_available() else "cpu")
     available_actions = mwg.total_available_actions
 
-    output_size = len(available_actions)
     model = DataParallel(ActorCriticModel(model_parameters['embedding_size'],
                                           model_parameters['hidden_layer_size'],
                                           model_parameters['num_layers'],
-                                          output_size)).to(device)
+                                          output_size=len(available_actions))).to(device)
 
     lr = training_parameters['learning_rate']
     num_episodes = int(training_parameters['num_episodes'])
@@ -36,11 +34,8 @@ def ac_IRL(mwg, model_parameters, training_parameters, base_path, save_model, gp
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    max_sequence_length = model_parameters['max_sequence_length']
-    tokenizer = AutoTokenizer.from_pretrained(model_parameters['word_embedding_model'])
-    # # TODO use a model which produces embeddings <786
-    # # TODO get size of the embeddings directly from the model
-    bert_embeddings = BertModel.from_pretrained(model_parameters['word_embedding_model'])
+    em_model = SentenceTransformer(model_parameters['sentence_embedding_model'])
+    em_model.max_seq_length = model_parameters['max_sequence_length']
 
     eps = np.finfo(np.float32).eps.item()
 
@@ -81,16 +76,11 @@ def ac_IRL(mwg, model_parameters, training_parameters, base_path, save_model, gp
             im = np.reshape(im, (np.shape(im)[2], np.shape(im)[1], np.shape(im)[0]))
             im_tensor = torch.FloatTensor([im])
 
-            text = state['text_state']
-            text_tokens = tokenizer.encode_plus(text, padding='max_length',
-                                                max_length=max_sequence_length,
-                                                add_special_tokens=True)
-            text_tokens_tensor = torch.LongTensor(text_tokens['input_ids']).unsqueeze(0)
-
-            word_embeddings = bert_embeddings(text_tokens_tensor)[0][0].unsqueeze(0)
+            embeddings = em_model.encode(state['text_state'])
+            embedded_text_tensor = torch.FloatTensor([embeddings]).unsqueeze(-1)
 
             action_probabilities, state_value = model(im_tensor.to(device),
-                                                      word_embeddings.to(device))
+                                                      embedded_text_tensor.to(device))
 
             # create a categorical distribution over the list of probabilities of actions
             m = Categorical(action_probabilities)
@@ -118,10 +108,6 @@ def ac_IRL(mwg, model_parameters, training_parameters, base_path, save_model, gp
                 batch_actions.extend(saved_actions)
                 batch_counter += 1
                 if batch_counter == batch_size:
-
-                    # TODO ignore for now
-                    # update cumulative reward
-                    # running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
 
                     # perform backprop
                     R = 0
@@ -166,11 +152,6 @@ def ac_IRL(mwg, model_parameters, training_parameters, base_path, save_model, gp
                     batch_actions = []
                     batch_counter = 0
 
-                    # log results
-                    # if episode % args.log_interval == 0:
-                    #     print('Episode {}\tLast reward: {:.2f}\tAverage reward: {:.2f}'.format(
-                    #           episode, ep_reward, running_reward))
-
         # save the progress of the training every checkpoint_frequency episodes
         if episode % checkpoint_frequency == 0 and save_model:
             torch.save({
@@ -198,7 +179,7 @@ class ActorCriticModel(nn.Module):
         self.fc_cnn2 = nn.Linear(1200, hidden_layer_size)
 
         # text processing
-        self.lstm1 = nn.LSTM(embedding_size, hidden_layer_size, batch_first=True, num_layers=num_layers)
+        self.lstm1 = nn.LSTM(1, hidden_layer_size, batch_first=True, num_layers=num_layers)
         self.fc_lstm = nn.Linear(hidden_layer_size, hidden_layer_size)
 
         # action model
