@@ -17,7 +17,7 @@ class MapWorldGym(Env):
                  ade_path='../../data/ADE20K_2021_17_01/images/ADE/training/',
                  image_resolution=(360, 360),
                  captions="./localized_narratives/ade20k_train_captions.json",
-                 reward_step=-10.0,
+                 reward_constant_step=-10.0,
                  reward_linear_step=-0.6666,
                  reward_logistic_step=-10.0,
                  reward_wrong_action=0.0,
@@ -58,7 +58,7 @@ class MapWorldGym(Env):
         self.action_space = spaces.Discrete(len(self.total_available_actions))
 
         # define the rewards (and penalties) for taking actions
-        self.reward_step = reward_step
+        self.reward_constant_step = reward_constant_step
         self.reward_linear_step = reward_linear_step
         self.reward_logistic_step = reward_logistic_step
         self.reward_room_selection = reward_room_selection
@@ -200,7 +200,7 @@ class MapWorldGym(Env):
         if action in self.available_actions:
             # TODO maybe make step reward linear increasing. Early steps are cheap, later costly
             if self.reward_step_function == 'constant':
-                reward = self.reward_step
+                reward = self.reward_constant_step
             elif self.reward_step_function == 'linear':
                 # linear increasing reward
                 reward = self.reward_linear_step * self.model_steps
@@ -275,6 +275,7 @@ class MapWorldGym(Env):
         Returns: Numpy array, reshaped image, (height, width, channels)
         """
         if self.images_returned_as_array == 'True':
+            # return the image as a numpy array
             # TODO make resizing dependent on aspect ratio of source to prevent distortions
             image = cv2.imread(image_path)
             # reshape any grayscale images to rgb
@@ -284,6 +285,7 @@ class MapWorldGym(Env):
 
             image = np.array(image)
         else:
+            # return the image as a Pillow object
             image = Image.open(image_path)
             if len(np.shape(image)) != 3:
                 image = image.convert('RGB')

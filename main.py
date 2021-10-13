@@ -24,7 +24,7 @@ if __name__ == '__main__':
                         help="Decide which model is to be run")
     parser.add_argument("--base_path", default="results",
                         help="Path where results, checkpoints and parameters are saved to")
-    parser.add_argument("--parameters", default='all_parameters.json'
+    parser.add_argument("--parameters", default='params/all_parameters.json'
                         , help="The path to the global parameters json. Default is all_parameters.json")
     parser.add_argument('--log_level', default='warning', choices=['warning', 'info', 'debug'],
                         help='Sets which logging messages to print. Default is "warning"')
