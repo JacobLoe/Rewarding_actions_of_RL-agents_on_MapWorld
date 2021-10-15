@@ -7,3 +7,4 @@ im2txt/checkpoints/
 utils/dists.html
 lightning_logs
 /runs
+utils/distances.pkl
