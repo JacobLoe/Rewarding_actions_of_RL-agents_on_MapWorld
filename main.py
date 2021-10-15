@@ -59,7 +59,7 @@ if __name__ == '__main__':
                       ade_path=mw_params['ade_path'],
                       image_resolution=(mw_params['image_width'], mw_params['image_height']),
                       captions=mw_params['captions'],
-                      reward_step=mw_params['reward_step'],
+                      reward_constant_step=mw_params['reward_constant_step'],
                       reward_wrong_action=mw_params['reward_wrong_action'],
                       reward_room_selection=mw_params['reward_room_selection'],
                       penalty_room_selection=mw_params['penalty_room_selection'],
