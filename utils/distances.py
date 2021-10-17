@@ -7,10 +7,37 @@ import torchvision.models as models
 from torchvision import transforms
 import glob
 import os
-from utils import create_histogram
+# from utils import create_histogram
 import numpy as np
 import pickle
 import random
+import plotly.express as px
+import pandas as pd
+import multiprocessing
+
+
+def create_histogram(data, title, plot_path='', save_plot=True, save_html=False):
+    """
+
+    Args:
+        save_html:
+        data:
+        title:
+        plot_path:
+        save_plot:
+    """
+    # TODO better title
+    title = f'Counts of {title}'
+
+    df = pd.DataFrame(data)
+    fig = px.histogram(df, title=title)
+    if save_plot:
+        fig.write_image(plot_path)
+        if save_html:
+            html_path = plot_path[:-4] + '.html'
+            fig.write_html(html_path)
+    else:
+        fig.show()
 
 
 def load_inception(device):
@@ -53,6 +80,7 @@ def extract_features(model, frame, device):
 
 
 if __name__ == '__main__':
+
     # TODO move code into main function that can be executed by an top-level script
     '''
     The script loads all .jpg-images from the categories used by MapWorld and extracts features for each.
@@ -106,7 +134,7 @@ if __name__ == '__main__':
         pa = os.path.join(base_path, p, '**/*.npy')
         numpy_path.extend(glob.glob(pa, recursive=True))
 
-    print('target_cats', len(image_path), len(numpy_path))
+    print('number of target_cats', len(image_path), len(numpy_path))
 
     for p in _distractor_cats:
 
@@ -116,7 +144,7 @@ if __name__ == '__main__':
         pa = os.path.join(base_path, p, '**/*.npy')
         numpy_path.extend(glob.glob(pa, recursive=True))
 
-    print('distractor_cats', len(image_path), len(numpy_path))
+    print('number of distractor_cats', len(image_path), len(numpy_path))
 
     for p in _outdoor_cats:
 
@@ -126,10 +154,14 @@ if __name__ == '__main__':
         pa = os.path.join(base_path, p, '**/*.npy')
         numpy_path.extend(glob.glob(pa, recursive=True))
 
-    print('outdoor_cats', len(image_path), len(numpy_path))
+    print('number of outdoor_cats', len(image_path), len(numpy_path))
 
+    # compute the distances between the features to get the mean and max distance
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     inception = load_inception(device)
+
+    pickled_dists = 'utils/distances.pkl'
+    sample_size = 100
 
     if not len(image_path) == len(numpy_path):
         dists = []
@@ -147,28 +179,43 @@ if __name__ == '__main__':
 
             d = euclidean_distances(f0, f)
             dists.append(d[0])
-    else:
+    elif not os.path.isfile(pickled_dists):
         print('load features')
         features = []
         for fp in tqdm(numpy_path):
             features.append(np.load(fp))
 
+        print('features shape', np.shape(features))
         # get a random sample
-        # features_sample = random.sample(features, 1000)
-        # print(np.shape(features_sample), np.shape(features))
+        features_sample = random.sample(features, sample_size)
+        print('features_sample shape', np.shape(features_sample))
 
-        # fs = [(f0, f1) for f0 in features for f1 in features]
+        fs = [(f0, f1) for f0 in features for f1 in features_sample]
         dists = []
-        for i, f0 in tqdm(enumerate(features)):
-            d = [euclidean_distances(f0, f)[0] for f in features]
-            dists.extend(d)
+        # for f0 in tqdm(features):
+        #     d = [euclidean_distances(f0, f)[0] for f in features]
+        #     dists.extend(d)
+        # shifts the distance distribution. Should be between -0.5 and 0.5 to keep the distribution between
+        # positive values shift the distribution to reward higher/more positive
+        # negative values shift the distribution to reward lower/more negative
+        # with the default distribution 50% of the reward is positive / max/min/mean 0.5/-0.5/0
+        # with shift_factor = 0.5 100% of the reward is positive max/min/mean 1/0/0.5
+        # with shift_factor = 0.25 99% of the reward is positive max/min/mean 0.75/-0.25/0.25
+        shift_factor = 0
+        for f0, f1 in tqdm(fs):
+            # distribution between -0.5 and 0.5
+            norm_dist = (euclidean_distances(f0, f1)[0])/1#30.135202
+            #
+            dists.append((norm_dist+shift_factor))
+        # clipped_dists = np.clip(dists, 0, 1)
+        # with open(pickled_dists, 'wb') as f:
+        #     pickle.dump(dists, f)
+    else:
+        print('loading pickled distances')
+        with open(pickled_dists, 'rb') as f:
+            dists = pickle.load(f)
+        print('dists', type(dists), np.shape(dists))
 
-    #     #TODO visualize normalized dists
-    #     for f0, f1 in tqdm(fs):
-    #         dists.append(euclidean_distances(f0, f1)[0])
-        with open('utils/distances.pkl', 'wb') as f:
-            pickle.dump(dists, f)
-
-    print('min, max, mean', np.min(dists), np.max(dists), np.mean(dists))
-    title = f'Distances for 1000 features to every other feature. Mean: {np.mean(dists)}, Max: {np.max(dists)}'
-    create_histogram(dists, title, plot_path='utils/dists.png', save_plot=True)
+    print('min, max, mean, std', np.min(dists), np.max(dists), np.mean(dists), np.std(dists))
+    title = f'Distances for {sample_size} features to every other feature. Mean: {np.mean(dists)}, Max: {np.max(dists)}, Min: {np.min(dists)}'
+    create_histogram(dists, title, plot_path='utils/dists.png', save_plot=False)
