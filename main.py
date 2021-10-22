@@ -70,7 +70,8 @@ if __name__ == '__main__':
     # run the chosen model on MapWorld with the loaded parameters
     if args.model == 'random':
         parameters = {'training': parameters['training'],
-                      'MapWorld': mw_params}
+                      'MapWorld': mw_params,
+                      'random': {}}
         if args.save_results:
             save_parameters(parameters, args.base_path)
         model_return, model_steps, model_hits = random_baseline(mwg,
