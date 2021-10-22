@@ -185,7 +185,7 @@ class MapWorldGym(Env):
         self.done = True
 
         self.state = {'current_room': self.current_room,
-                      'text_state': self.directions}
+                      'text_state': self.text_state}
         return reward
 
     def move(self, action):
@@ -198,7 +198,6 @@ class MapWorldGym(Env):
         Returns: a float, the reward for the action
         """
         if action in self.available_actions:
-            # TODO maybe make step reward linear increasing. Early steps are cheap, later costly
             if self.reward_step_function == 'constant':
                 reward = self.reward_constant_step
             elif self.reward_step_function == 'linear':
@@ -214,13 +213,12 @@ class MapWorldGym(Env):
             self.current_room_name = path.relpath(state[0], self.ade_path)
             self.current_room = self.load_image(state[0], self.image_resolution)
             self.directions = state[1] + f' or {self.total_available_actions[4]}.'
+            self.text_state = self.target_room + ' ' + self.directions
         else:
-            # TODO not sure what the correct reward here would be for taking an unavailable action
-            # TODO maybe stop penalizing wrong actions
             reward = self.reward_wrong_action
 
         self.state = {'current_room': self.current_room,
-                      'text_state': self.directions}
+                      'text_state': self.text_state}
 
         return reward
 
@@ -241,7 +239,6 @@ class MapWorldGym(Env):
 
         # distances follow a gaussian distribution
         distance = euclidean_distances(feature0, feature1)[0][0]
-        # TODO check which normalization to use
         # normalize distance, subtract mean, divide by maximum
         # mean and max distance were computed from the distance of all images to other image
         # additionally the sign is switched to map the minimum distance value to the maximum reward

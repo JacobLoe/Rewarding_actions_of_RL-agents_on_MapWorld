@@ -1,1 +1,1 @@
-Contains the code for MapWorld from https://github.com/clp-research/sempix/tree/master/03_Tasks/MapWorld and the derived OpenAi Gym version of MapWorld
+Contains the code for MapWorld from https://github.com/clp-research/sempix/tree/master/03_Tasks/MapWorld and a wrapper to use MapWorld as an RL-environment.
