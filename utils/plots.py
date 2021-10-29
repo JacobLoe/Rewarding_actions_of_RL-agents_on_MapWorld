@@ -30,16 +30,17 @@ def get_data(base_path):
 
 
 def plot_accuracy(model_hits, model_name, plot_path, split=100, save_plot=True, save_html=False):
-    # compute total accuracy
-    accuracy = np.sum(model_hits)/(len(model_hits))
+    # compute total accuracy to four decimals
+    accuracy = np.round(np.sum(model_hits)/(len(model_hits)), decimals=4)
 
     # create splits of even length of the data
     split_model_hits = np.array_split(model_hits, split)
     split_size = len(split_model_hits[0])
-    # compute accuracy over
+    # compute accuracy over every split
     accuracy_per_split = [np.sum(x)/len(x) for x in split_model_hits]
 
-    title = f'Accuracy of {model_name} per part of episode length {split_size}. Total accuracy: {accuracy}'
+    # TODO fix title
+    title = f'Accuracy of {model_name} every {split_size} episodes. Total accuracy: {accuracy}'
     x_axis_label = 'Part'
     y_axis_label = 'Accuracy'
 
