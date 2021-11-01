@@ -135,8 +135,9 @@ class MapWorldGym(Env):
 
         # append action 'select_room' directions returned by MapWorld
         self.directions = initial_state[1] + f' or {self.actions[4]}.'
-        # remove prepending fluff, actions are separated by ","
-        self.available_actions = self.directions[12:].replace('or ', '').split()
+        # get a searchable list of available actions
+        # remove prepending fluff, actions are separated by "," and "or"
+        self.available_actions = self.directions[12:].replace('or ', '').strip('.').split()
 
         # concatenate the target caption and directions
         self.text_state = self.target_room + ' ' + self.directions
@@ -172,11 +173,11 @@ class MapWorldGym(Env):
         if self.current_room_name == self.target_room_name:
             self.room_found = 1
             # TODO move reward if condition
-            if not self.reward_selection_by_distance == 'True':
+            if self.reward_selection_by_distance == 'False':
                 reward = self.reward_room_selection
         else:
             self.room_found = 0
-            if not self.reward_selection_by_distance == 'True':
+            if self.reward_selection_by_distance == 'False':
                 reward = self.penalty_room_selection
 
         # reward the room selection based on the similarity between target and current room
@@ -217,7 +218,7 @@ class MapWorldGym(Env):
             self.current_room = self.load_image(state[0], self.image_resolution)
 
             self.directions = state[1] + f' or {self.actions[4]}.'
-            self.available_actions = self.directions[12:].replace('or', '').split()
+            self.available_actions = self.directions[12:].replace('or', '').strip('.').split()
 
             self.text_state = self.target_room + ' ' + self.directions
         else:
@@ -288,10 +289,11 @@ class MapWorldGym(Env):
             image = cv2.resize(image, image_resolution)
 
             image = np.array(image)
-        else:
+        elif self.images_returned_as_array == 'False':
             # return the image as a Pillow object
             image = Image.open(image_path)
             if len(np.shape(image)) != 3:
                 image = image.convert('RGB')
-
+        else:
+            raise Exception(f'The value {self.images_returned_as_array} is not supported for parameter "images_returned_as_array"')
         return image

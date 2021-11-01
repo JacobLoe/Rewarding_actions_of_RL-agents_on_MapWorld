@@ -46,7 +46,8 @@
         "gamma": 0.99,
         "learning_rate": 0.0005,
         "max_steps": 60,
-        "num_episodes": 4e6,
-        "checkpoint_frequency": 20000
+        "num_episodes": 2e6,
+        "checkpoint_frequency": 20000,
+        "mask_actions": "False"
     }
 }

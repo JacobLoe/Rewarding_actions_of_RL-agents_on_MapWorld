@@ -11,6 +11,8 @@ from torch.distributions import Categorical
 
 from sentence_transformers import SentenceTransformer
 
+from utils import CategoricalMasked
+
 
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
 def ac_IRL(mwg, model_parameters, training_parameters, base_path, save_model, gpu, load_model):
@@ -82,9 +84,17 @@ def ac_IRL(mwg, model_parameters, training_parameters, base_path, save_model, gp
             action_probabilities, state_value = model(im_tensor.to(device),
                                                       embedded_text_tensor.to(device))
 
-            # create a categorical distribution over the list of probabilities of actions
-            m = Categorical(action_probabilities)
-            # and sample an action using the distribution
+            if training_parameters['mask_actions'] == 'False':
+                # create a categorical distribution over the list of probabilities of actions
+                m = Categorical(action_probabilities)
+            elif training_parameters['mask_actions'] == 'True':
+                # create a mask for allowed actions, where True is allowed and False forbidden
+                action_mask = torch.tensor([True if v in mwg.available_actions else False for v in mwg.actions.values()])
+                m = CategoricalMasked(action_probabilities.clone(), action_mask.to(device))
+            else:
+                raise Exception(f'The value {training_parameters["mask_actions"]} for the parameter "mask_actions" is not supported.')
+
+            # sample an action using the distribution
             action = m.sample()
 
             # save to action buffer

@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from torch.distributions import Categorical
 from torchvision import transforms
 
+from utils import CategoricalMasked
 from utils.distances import load_inception
 from sentence_transformers import SentenceTransformer
 
@@ -17,18 +18,18 @@ from sentence_transformers import SentenceTransformer
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
 def actor_critic(mwg, model_parameters, training_parameters, base_path, save_model, gpu, load_model):
     """
-
+    Runs an actor-critic algorithm defined by model_parameters, with training_parameters
     Args:
-        mwg:
-        model_parameters:
-        training_parameters:
-        base_path:
-        save_model:
-        gpu:
+        mwg: A OpenAi-Gym environment
+        model_parameters: dictionary containing parameters to define a pytorch model
+        training_parameters: dictionary characterising the training loop
+        base_path: string, setting the path where results and checkpoints are saved to
+        save_model: bool, Sets whether a checkpoint of the model is to be saved
+        gpu: string
         load_model:
 
-    Returns:
-
+    Returns: three lists, the rewards per episode, the steps taken per episode
+             and a list containing the success of each episode
     """
     SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
@@ -105,9 +106,17 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
             action_probabilities, state_value = model(im_tensor.to(device),
                                                       embedded_text_tensor.to(device))
 
-            # create a categorical distribution over the list of probabilities of actions
-            m = Categorical(action_probabilities)
-            # and sample an action using the distribution
+            if training_parameters['mask_actions'] == 'False':
+                # create a categorical distribution over the list of probabilities of actions
+                m = Categorical(action_probabilities)
+            elif training_parameters['mask_actions'] == 'True':
+                # create a mask for allowed actions, where True is allowed and False forbidden
+                action_mask = torch.tensor([True if v in mwg.available_actions else False for v in mwg.actions.values()])
+                m = CategoricalMasked(action_probabilities.clone(), action_mask.to(device))
+            else:
+                raise Exception(f'The value {training_parameters["mask_actions"]} for the parameter "mask_actions" is not supported.')
+
+            # sample an action using the distribution
             action = m.sample()
 
             # save to action buffer
@@ -227,3 +236,6 @@ class ActorCriticModel(nn.Module):
         value = self.fc_value1(value)
 
         return actions, value
+
+
+

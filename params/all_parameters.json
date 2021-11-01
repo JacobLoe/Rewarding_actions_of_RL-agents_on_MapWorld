@@ -17,7 +17,7 @@
         "penalty_room_selection": -1000.0,
         "reward_selection_by_distance": "True",
         "reward_step_function": "logistic",
-        "images_returned_as_array": "True"
+        "images_returned_as_array": "False"
     },
     "REINFORCE": {
         "sentence_embedding_model": "paraphrase-MiniLM-L6-v2",
@@ -49,13 +49,8 @@
         "gamma": 0.99,
         "learning_rate": 0.0005,
         "max_steps": 60,
-        "num_episodes": 4e6,
+        "num_episodes": 2e6,
         "checkpoint_frequency": 20000,
-        "replay_size": 1000,
-        "warm_start_steps": 1000,
-        "eps_start": 1.0,
-        "eps_end": 0.01,
-        "eps_last_frame": 1000,
-        "sync_rate": 10
+        "mask_actions": "False"
     }
 }
