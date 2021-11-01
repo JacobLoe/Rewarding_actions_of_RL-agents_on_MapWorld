@@ -57,6 +57,7 @@ class MapWorldGym(Env):
         self.total_available_actions = {0: 'north', 1: 'east', 2: 'south', 3: 'west', 4: 'select_room'}
         self.action_space = spaces.Discrete(len(self.total_available_actions))
 
+        # TODO add type checks for reward function
         # define the rewards (and penalties) for taking actions
         self.reward_constant_step = reward_constant_step
         self.reward_linear_step = reward_linear_step
