@@ -23,7 +23,6 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
         model_parameters:
         training_parameters:
         base_path:
-        logger:
         save_model:
         gpu:
         load_model:
@@ -34,7 +33,7 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
     SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
     device = torch.device(gpu if torch.cuda.is_available() else "cpu")
-    available_actions = mwg.total_available_actions
+    available_actions = mwg.actions
 
     model = DataParallel(ActorCriticModel(model_parameters['embedding_size'],
                                           model_parameters['hidden_layer_size'],

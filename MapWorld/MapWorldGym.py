@@ -54,8 +54,8 @@ class MapWorldGym(Env):
         self.image_resolution = image_resolution
 
         # maps the actions actions input into MapWorldGym to actions that are interpretable by MapWorld
-        self.total_available_actions = {0: 'north', 1: 'east', 2: 'south', 3: 'west', 4: 'select_room'}
-        self.action_space = spaces.Discrete(len(self.total_available_actions))
+        self.actions = {0: 'north', 1: 'east', 2: 'south', 3: 'west', 4: 'select_room'}
+        self.action_space = spaces.Discrete(len(self.actions))
 
         # TODO add type checks for reward function
         # define the rewards (and penalties) for taking actions
@@ -114,34 +114,34 @@ class MapWorldGym(Env):
         :return: list, returns the current room, question and available actions
         """
         self.done = False
+        # keep track of the total steps taken and the return
+        self.model_return = 0
+        self.model_steps = 0
+
         # initialise a new MapWorld object with the parameters set in the class init
         ade_map = ADEMap(self.n, self.m, self.n_rooms, (self.room_types, self.room_repetitions))
         self.mw = MapWorldWrapper(ade_map, image_prefix=self.ade_path)
 
-        initial_state = self.mw.initial_state   # the initial state is only needed during the reset
+        initial_state = self.mw.initial_state
 
+        #
         self.target_room, self.target_room_name = self.get_caption_for_image(self.mw.target_room)
         self.target_room_path = self.mw.target_room
 
+        #
         self.current_room_name = path.relpath(initial_state[0], self.ade_path)
         self.current_room = self.load_image(initial_state[0], self.image_resolution)
         self.current_room_path = initial_state[0]
 
         # append action 'select_room' directions returned by MapWorld
-        self.directions = initial_state[1] + f' or {self.total_available_actions[4]}.'
+        self.directions = initial_state[1] + f' or {self.actions[4]}.'
         # remove prepending fluff, actions are separated by ","
-        self.available_actions = self.directions[12:].split()
+        self.available_actions = self.directions[12:].replace('or ', '').split()
 
         # concatenate the target caption and directions
-
-        # keep track of the total steps taken and the return
-        self.model_return = 0
-        self.model_steps = 0
-
-        # con
         self.text_state = self.target_room + ' ' + self.directions
 
-        # return the initial state
+        # return the initial state as a dictionary
         self.state = {'current_room': self.current_room,
                       'text_state': self.text_state}
         return self.state
@@ -149,12 +149,12 @@ class MapWorldGym(Env):
     def step(self, action_index):
         """
         Take one step in the environment
-        :param action_index: int, index corresponds to one of the actions in self.total_available_actions
+        :param action_index: int, index corresponds to one of the actions in self.actions
         :return: list, contains the state, reward and signal if the game is done
         """
         # map the chosen action index to the action string
-        action = self.total_available_actions[action_index]
-        if action == self.total_available_actions[4]:
+        action = self.actions[action_index]
+        if action == self.actions[4]:
             reward = self.select_room()
         else:
             reward = self.move(action)
@@ -210,11 +210,15 @@ class MapWorldGym(Env):
                 # TODO explain the boundaries for sigmoid
                 reward = self.reward_logistic_step / (1 + np.exp(-self.model_steps + 11))
 
+            # input the action to mapworld and update the state accordingly
             state = self.mw.upd(action)
 
             self.current_room_name = path.relpath(state[0], self.ade_path)
             self.current_room = self.load_image(state[0], self.image_resolution)
-            self.directions = state[1] + f' or {self.total_available_actions[4]}.'
+
+            self.directions = state[1] + f' or {self.actions[4]}.'
+            self.available_actions = self.directions[12:].replace('or', '').split()
+
             self.text_state = self.target_room + ' ' + self.directions
         else:
             reward = self.reward_wrong_action

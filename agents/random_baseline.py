@@ -22,7 +22,7 @@ def random_baseline(mapgame, episodes=200000, max_steps=50):
         s = mapgame.reset()
 
         # print(f'Time for env reset {time() - t_r}')
-        available_actions = mapgame.total_available_actions
+        available_actions = mapgame.actions
         done = False
         steps = 0
         while not done and steps < max_steps:

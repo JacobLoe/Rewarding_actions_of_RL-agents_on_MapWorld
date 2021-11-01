@@ -32,7 +32,7 @@ def reinforce(mwg, model_parameters, training_parameters, base_path,
     """
     # TODO include flag to turn on/off training, so model doesn't train on eval data
 
-    available_actions = mwg.total_available_actions
+    available_actions = mwg.actions
     action_space = np.arange(len(available_actions))
 
     # assign all available gpu devices to pytorch
