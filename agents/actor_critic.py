@@ -15,8 +15,7 @@ from sentence_transformers import SentenceTransformer
 
 
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
-def actor_critic(mwg, model_parameters, training_parameters, base_path,
-                 logger, save_model, gpu, load_model):
+def actor_critic(mwg, model_parameters, training_parameters, base_path, save_model, gpu, load_model):
     """
 
     Args:
@@ -57,7 +56,7 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path,
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    em_model = SentenceTransformer(model_parameters['sentence_embedding_model'])
+    em_model = SentenceTransformer(model_parameters['sentence_embedding_model']).to(device)
     em_model.max_seq_length = model_parameters['max_sequence_length']
 
     eps = np.finfo(np.float32).eps.item()
@@ -106,7 +105,6 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path,
 
             action_probabilities, state_value = model(im_tensor.to(device),
                                                       embedded_text_tensor.to(device))
-            logger.debug('action_probabilities', action_probabilities)
 
             # create a categorical distribution over the list of probabilities of actions
             m = Categorical(action_probabilities)
