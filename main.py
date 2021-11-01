@@ -107,7 +107,6 @@ if __name__ == '__main__':
                                                              parameters['actor_critic'],
                                                              parameters['training'],
                                                              base_path=args.base_path,
-                                                             logger=logger,
                                                              save_model=args.save_model,
                                                              gpu=args.gpu,
                                                              load_model=args.load_model)
