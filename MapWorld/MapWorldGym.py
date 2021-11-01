@@ -179,6 +179,7 @@ class MapWorldGym(Env):
             if not self.reward_selection_by_distance == 'True':
                 reward = self.penalty_room_selection
 
+        # reward the room selection based on the similarity between target and current room
         if self.reward_selection_by_distance == 'True':
             reward = self.get_reward_from_distance()
 
@@ -232,14 +233,14 @@ class MapWorldGym(Env):
         """
         # TODO how to cite hpi work ?
 
-        feature0_path = self.target_room_path[:-4] + '.npy'
-        feature1_path = self.current_room_path[:-4] + '.npy'
+        path_feature_target = self.target_room_path[:-4] + '.npy'
+        path_feature_current = self.current_room_path[:-4] + '.npy'
 
-        feature0 = np.load(feature0_path)
-        feature1 = np.load(feature1_path)
+        feature_target = np.load(path_feature_target)
+        feature_current = np.load(path_feature_current)
 
         # distances follow a gaussian distribution
-        distance = euclidean_distances(feature0, feature1)[0][0]
+        distance = euclidean_distances(feature_target, feature_current)[0][0]
         # normalize distance, subtract mean, divide by maximum
         # mean and max distance were computed from the distance of all images to other image
         # additionally the sign is switched to map the minimum distance value to the maximum reward
@@ -257,6 +258,7 @@ class MapWorldGym(Env):
         """
         target_room = path.relpath(image_path, self.ade_path)
 
+        # use the name of the image as the key for the caption dictionary
         caption_key = path.split(target_room)[1].strip('.jpg')
         target_caption = self.dict_captions[caption_key]
 

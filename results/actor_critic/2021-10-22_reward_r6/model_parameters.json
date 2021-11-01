@@ -9,7 +9,7 @@
         "n": 4,
         "n_rooms": 10,
         "penalty_room_selection": 0.0,
-        "reward_constant_step": -10.0,
+        "reward_constant_step": 0.0,
         "reward_linear_step": 0.0,
         "reward_logistic_step": -10.0,
         "reward_room_selection": 200.0,
