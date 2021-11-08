@@ -1,4 +1,4 @@
-name: hrl-tb
+name: mapworld
 channels:
   - pytorch
   - conda-forge
@@ -20,6 +20,7 @@ dependencies:
   - pandas
   - sentence-transformers
   - jsonlines
+  - einops
   - pip:
       - gym
       - opencv-python==4.2.0.32

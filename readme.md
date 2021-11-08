@@ -3,7 +3,7 @@ Create and activate conda environment
 (Tested with Anaconda version 4.10.1):
 ```
 conda env create -f environment.yml
-conda activate hrl-tb
+conda activate mapworld
 ```
 
 Before running the code two scripts have to be run first:
