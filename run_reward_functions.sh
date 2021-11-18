@@ -1,7 +1,5 @@
 #!/bin/bash
 
-python main.py ac --parameters params/reward_funtion_r4.json --base_path results/actor_critic/2021-11-10_reward_rf4
-echo " "
 python main.py ac --parameters params/reward_funtion_r5.json --base_path results/actor_critic/2021-11-12_reward_rf5
 echo " "
 python main.py ac --parameters params/reward_funtion_r6.json --base_path results/actor_critic/2021-11-14_reward_rf6
