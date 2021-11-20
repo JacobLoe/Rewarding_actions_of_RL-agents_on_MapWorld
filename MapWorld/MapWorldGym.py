@@ -172,15 +172,13 @@ class MapWorldGym(Env):
         """
         if self.current_room_name == self.target_room_name:
             self.room_found = 1
-            # TODO move reward if condition
-            if self.reward_selection_by_distance == 'False':
-                reward = self.reward_room_selection
+            reward = self.reward_room_selection
         else:
             self.room_found = 0
-            if self.reward_selection_by_distance == 'False':
-                reward = self.penalty_room_selection
+            reward = self.penalty_room_selection
 
         # reward the room selection based on the similarity between target and current room
+        # overrides any rewards set previously
         if self.reward_selection_by_distance == 'True':
             reward = self.get_reward_from_distance()
 
