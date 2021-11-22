@@ -98,10 +98,10 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
             processed_frame = preprocess_pil_image(state['current_room']).unsqueeze(0).to(device)
             with torch.no_grad():
                 im = inception(processed_frame).squeeze().cpu().detach().numpy()
-            im_tensor = torch.FloatTensor([im])
+            im_tensor = torch.FloatTensor(np.array([im]))
 
             embeddings = em_model.encode(state['text_state'])
-            embedded_text_tensor = torch.FloatTensor([embeddings])
+            embedded_text_tensor = torch.FloatTensor(np.array([embeddings]))
 
             action_probabilities, state_value = model(im_tensor.to(device),
                                                       embedded_text_tensor.to(device))
@@ -175,7 +175,6 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
                     optimizer.step()
-
                     del returns
                     del value_losses
                     del policy_losses

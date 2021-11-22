@@ -9,8 +9,6 @@ import json
 from sklearn.metrics.pairwise import euclidean_distances
 
 
-# TODO add option for turning on "dynamic" actions, the agent can only choose actions that are actually available
-
 class MapWorldGym(Env):
 
     def __init__(self, n=4, m=4, n_rooms=10, room_types=2, room_repetitions=2,
@@ -67,13 +65,14 @@ class MapWorldGym(Env):
         self.penalty_room_selection = penalty_room_selection
 
         # check which reward function is to be used for takings steps and if it is valid
-        rsf = ('constant', 'linear', 'logistic')
-        if reward_step_function not in rsf:
+        rsf = {'constant': 0, 'linear': 1, 'logistic': 2}
+        if reward_step_function not in rsf.keys():
             raise Exception(f'The reward function for a step has to be one of {rsf}. Was "{reward_step_function}"')
-        self.reward_step_function = reward_step_function
-        self.reward_selection_by_distance = reward_selection_by_distance
+        self.reward_step_function = rsf[reward_step_function]
 
-        self.images_returned_as_array = images_returned_as_array
+        self.reward_selection_by_distance = True if reward_selection_by_distance == 'True' else False
+
+        self.images_returned_as_array = True if images_returned_as_array == 'True' else False
 
         ##########################################################
         # The variables defined in the init are placeholders and are only their function is explained here
@@ -149,15 +148,15 @@ class MapWorldGym(Env):
 
     def step(self, action_index):
         """
-        Take one step in the environment
+        Take one step in the environment. An index is mapped to the string representing the actions in MapWorld
         :param action_index: int, index corresponds to one of the actions in self.actions
         :return: list, contains the state, reward and signal if the game is done
         """
         # map the chosen action index to the action string
-        action = self.actions[action_index]
-        if action == self.actions[4]:
+        if action_index == 4:
             reward = self.select_room()
         else:
+            action = self.actions[action_index]
             reward = self.move(action)
 
         self.model_return += reward
@@ -179,7 +178,7 @@ class MapWorldGym(Env):
 
         # reward the room selection based on the similarity between target and current room
         # overrides any rewards set previously
-        if self.reward_selection_by_distance == 'True':
+        if self.reward_selection_by_distance:
             reward = self.get_reward_from_distance()
 
         # Terminate the game
@@ -199,12 +198,13 @@ class MapWorldGym(Env):
         Returns: a float, the reward for the action
         """
         if action in self.available_actions:
-            if self.reward_step_function == 'constant':
+            if self.reward_step_function == 0:
+                # constant reward
                 reward = self.reward_constant_step
-            elif self.reward_step_function == 'linear':
+            elif self.reward_step_function == 1:
                 # linear increasing reward
                 reward = self.reward_linear_step * self.model_steps
-            elif self.reward_step_function == 'logistic':
+            elif self.reward_step_function == 2:
                 # reward increasing with logistic function
                 # TODO explain the boundaries for sigmoid
                 reward = self.reward_logistic_step / (1 + np.exp(-self.model_steps + 11))
@@ -277,7 +277,7 @@ class MapWorldGym(Env):
 
         Returns: Numpy array, reshaped image, (height, width, channels)
         """
-        if self.images_returned_as_array == 'True':
+        if self.images_returned_as_array:
             # return the image as a numpy array
             # TODO make resizing dependent on aspect ratio of source to prevent distortions
             image = cv2.imread(image_path)
@@ -287,11 +287,9 @@ class MapWorldGym(Env):
             image = cv2.resize(image, image_resolution)
 
             image = np.array(image)
-        elif self.images_returned_as_array == 'False':
+        else:
             # return the image as a Pillow object
             image = Image.open(image_path)
             if len(np.shape(image)) != 3:
                 image = image.convert('RGB')
-        else:
-            raise Exception(f'The value {self.images_returned_as_array} is not supported for parameter "images_returned_as_array"')
         return image
