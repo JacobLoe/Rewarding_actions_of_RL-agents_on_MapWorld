@@ -14,6 +14,7 @@ from utils import CategoricalMasked
 from utils.distances import load_inception
 from sentence_transformers import SentenceTransformer
 
+import time
 
 # adapted from https://github.com/pytorch/examples/blob/master/reinforcement_learning/actor_critic.py
 def actor_critic(mwg, model_parameters, training_parameters, base_path, save_model, gpu, load_model):
@@ -81,6 +82,10 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
     batch_actions = []
     batch_counter = 0
 
+    t_dis_rw = []
+    t_loss = []
+    t_bp = []
+
     for episode in tqdm(range(starting_episode, num_episodes)):
 
         # reset environment and episode reward
@@ -147,16 +152,21 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
                     value_losses = []  # list to save critic (value) loss
                     returns = []  # list to save the true values
 
+                    a = time.time()
                     # TODO check whether this and discount_rewards amount to the same operation
                     # calculate the true value using rewards returned from the environment
                     for r in batch_rewards[::-1]:
                         # calculate the discounted value
                         R = r + gamma * R
                         returns.insert(0, R)
+                    a = time.time()-a
+                    print(f'Time discount rewards: {a}')
+                    # t_dis_rw.append(a)
 
                     returns = torch.tensor(returns, dtype=torch.float32).to(device)
                     returns = (returns - returns.mean()) / (returns.std() + eps)
 
+                    b = time.time()
                     for (log_prob, value), R in zip(batch_actions, returns):
                         advantage = R - value.item()
 
@@ -165,7 +175,11 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
 
                         # calculate critic (value) loss using L1 smooth loss
                         value_losses.append(F.smooth_l1_loss(value, torch.tensor([R]).unsqueeze(-1).to(device)))
+                    b = time.time()-b
+                    print(f'Time loss: {b}')
+                    # t_loss.append(b)
 
+                    c = time.time()
                     # reset gradients
                     optimizer.zero_grad()
                     # sum up all the values of policy_losses and value_losses
@@ -175,6 +189,10 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
                     optimizer.step()
+                    c = time.time()-c
+                    print(f'Time backprop: {c}')
+                    # t_bp.append(c)
+                    
                     del returns
                     del value_losses
                     del policy_losses

@@ -8,6 +8,8 @@ from os import path
 import json
 from sklearn.metrics.pairwise import euclidean_distances
 
+import time
+
 
 class MapWorldGym(Env):
 
