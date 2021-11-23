@@ -103,15 +103,22 @@ if __name__ == '__main__':
                       'MapWorld': mw_params}
         if args.save_results:
             save_parameters(parameters, args.base_path)
-        model_return, model_steps, model_hits = actor_critic(mwg,
+        model_return, model_steps, model_hits, tt = actor_critic(mwg,
                                                              parameters['actor_critic'],
                                                              parameters['training'],
                                                              base_path=args.base_path,
                                                              save_model=args.save_model,
                                                              gpu=args.gpu,
                                                              load_model=args.load_model)
-        if args.save_results:
-            save_results(model_return, model_steps, model_hits, args.base_path)
+
+        np.save('r9/time_discount_rewards', tt[0])
+        np.save('r9/time_losses', tt[1])
+        np.save('r9/time_backprop', tt[2])
+        np.save('r9/rewards', model_return)
+
+
+        # if args.save_results:
+        #     save_results(model_return, model_steps, model_hits, args.base_path)
     elif args.model == 'ac_irl':
         parameters = {'actor_critic': parameters['ac_IRL'],
                       'training': parameters['training'],

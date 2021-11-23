@@ -160,8 +160,8 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
                         R = r + gamma * R
                         returns.insert(0, R)
                     a = time.time()-a
-                    print(f'Time discount rewards: {a}')
-                    # t_dis_rw.append(a)
+                    # print(f'Time discount rewards: {a}')
+                    t_dis_rw.append(a)
 
                     returns = torch.tensor(returns, dtype=torch.float32).to(device)
                     returns = (returns - returns.mean()) / (returns.std() + eps)
@@ -176,8 +176,8 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
                         # calculate critic (value) loss using L1 smooth loss
                         value_losses.append(F.smooth_l1_loss(value, torch.tensor([R]).unsqueeze(-1).to(device)))
                     b = time.time()-b
-                    print(f'Time loss: {b}')
-                    # t_loss.append(b)
+                    # print(f'Time loss: {b}')
+                    t_loss.append(b)
 
                     c = time.time()
                     # reset gradients
@@ -190,9 +190,9 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
                     optimizer.step()
                     c = time.time()-c
-                    print(f'Time backprop: {c}')
-                    # t_bp.append(c)
-                    
+                    # print(f'Time backprop: {c}')
+                    t_bp.append(c)
+
                     del returns
                     del value_losses
                     del policy_losses
@@ -209,7 +209,7 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
                 'optimizer_state_dict': optimizer.state_dict(),
             }, ck_path)
 
-    return total_rewards, total_steps, hits
+    return total_rewards, total_steps, hits, [t_dis_rw, t_loss, t_bp]
 
 
 class ActorCriticModel(nn.Module):
