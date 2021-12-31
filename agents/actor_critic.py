@@ -20,7 +20,7 @@ def actor_critic(mwg, model_parameters, training_parameters, base_path, save_mod
     """
     Runs an actor-critic algorithm defined by model_parameters, with training_parameters
     Args:
-        mwg: A OpenAi-Gym environment
+        mwg: An  OpenAi-Gym environment
         model_parameters: dictionary containing parameters to define a pytorch model
         training_parameters: dictionary characterising the training loop
         base_path: string, setting the path where results and checkpoints are saved to

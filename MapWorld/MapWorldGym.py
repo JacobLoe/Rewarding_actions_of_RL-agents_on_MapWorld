@@ -26,12 +26,14 @@ class MapWorldGym(Env):
                  reward_selection_by_distance='True',
                  reward_step_function='linear',
                  images_returned_as_array='True'):
+        # TODO write type checks
         # the dimensions of the map
         self.n = n
         self.m = m
         # the number of rooms on the map
         self.n_rooms = n_rooms
         # TODO add explanation for room types and repetitions (what do they mean for the maps)
+        # TODO rewrite this into one parameter, which accepts a tuple
         self.room_types = room_types
         self.room_repetitions = room_repetitions
 
@@ -72,6 +74,7 @@ class MapWorldGym(Env):
             raise Exception(f'The reward function for a step has to be one of {rsf}. Was "{reward_step_function}"')
         self.reward_step_function = rsf[reward_step_function]
 
+        # convert values from parameter.json from strings to boolean to speed up comparisons
         self.reward_selection_by_distance = True if reward_selection_by_distance == 'True' else False
 
         self.images_returned_as_array = True if images_returned_as_array == 'True' else False

@@ -23,6 +23,7 @@ if __name__ == '__main__':
     results_paths = os.path.join(args.base_path, '**/model_parameters.json')
     parameter_jsons = glob.glob(results_paths, recursive=True)
 
+    print(f'Found {len(parameter_jsons)} parameter files.')
     for rp in parameter_jsons:
         base_path = os.path.split(rp)[0]
         data_dataframe, num_episodes, plot_base_path, model_name = get_data(base_path)

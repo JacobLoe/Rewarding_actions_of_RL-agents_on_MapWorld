@@ -29,7 +29,7 @@ def get_data(base_path):
     return data_dataframe, num_episodes, plot_base_path, model_name
 
 
-def plot_accuracy(model_hits, model_name, plot_path, split=100, save_plot=True, save_html=False):
+def plot_accuracy(model_hits, plot_path, split=100, save_plot=True, save_html=False):
     # compute total accuracy to four decimals
     accuracy = np.round(np.sum(model_hits)/(len(model_hits)), decimals=4)
 
@@ -40,13 +40,12 @@ def plot_accuracy(model_hits, model_name, plot_path, split=100, save_plot=True, 
     accuracy_per_split = [np.sum(x)/len(x) for x in split_model_hits]
 
     # TODO fix title
-    title = f'Accuracy of {model_name} every {split_size} episodes. Total accuracy: {accuracy}'
     x_axis_label = 'Part'
     y_axis_label = 'Accuracy'
 
     fig = px.line(x=range(len(split_model_hits)),
-                  y=accuracy_per_split,
-                  title=title)
+                  y=accuracy_per_split)
+
     fig.update_xaxes(title_text=x_axis_label)
     fig.update_yaxes(title_text=y_axis_label)
     if save_plot:
@@ -58,19 +57,18 @@ def plot_accuracy(model_hits, model_name, plot_path, split=100, save_plot=True, 
         fig.show()
 
 
-def create_histogram(data_dataframe, title, plot_path='', save_plot=True, save_html=False):
+def create_histogram(data_dataframe, plot_path='', save_plot=True, save_html=False):
     """
 
     Args:
         save_html:
         data_dataframe:
-        title:
         plot_path:
         save_plot:
     """
 
     # TODO where are the axis descriptions ?
-    fig = px.histogram(data_dataframe, title=title)
+    fig = px.histogram(data_dataframe)
     if save_plot:
         fig.write_image(plot_path)
         if save_html:
@@ -80,7 +78,7 @@ def create_histogram(data_dataframe, title, plot_path='', save_plot=True, save_h
         fig.show()
 
 
-def return_over_episodes(data_dataframe, model_name, plot_path,
+def return_over_episodes(data_dataframe, plot_path,
                          save_plot=True, filter_return=True, size=50000, save_html=False):
     """
 
@@ -90,21 +88,18 @@ def return_over_episodes(data_dataframe, model_name, plot_path,
         size:
         save_plot:
         data_dataframe:
-        model_name:
         plot_path:
     """
 
     if filter_return:
         data_dataframe = data_dataframe.rolling(window=size, min_periods=1, center=True).mean()
 
-    title = f'Return of {model_name} for {len(data_dataframe)} episodes, moving average over {size} episodes'
-
     x_axis_label = 'Episode'
     y_axis_label = 'Return'
-    fig = px.line(data_dataframe,
-                  title=title)
+    fig = px.line(data_dataframe)
     fig.update_xaxes(title_text=x_axis_label)
     fig.update_yaxes(title_text=y_axis_label)
+
     if save_plot:
         fig.write_image(plot_path)
         if save_html:
@@ -114,7 +109,7 @@ def return_over_episodes(data_dataframe, model_name, plot_path,
         fig.show()
 
 
-def steps_over_episodes(data_dataframe, model_name, plot_path,
+def steps_over_episodes(data_dataframe, plot_path,
                         save_plot=True, save_html=False):
     """
 
@@ -122,17 +117,16 @@ def steps_over_episodes(data_dataframe, model_name, plot_path,
         save_html:
         save_plot:
         data_dataframe:
-        model_name:
         plot_path:
     """
 
-    title = f'Steps of {model_name} for every episode'
+    # title = f'Steps of {model_name} for every episode'
     x_axis_label = 'Episode'
     y_axis_label = 'Steps per episode'
-    fig = px.line(data_dataframe,
-                  title=title)
+    fig = px.line(data_dataframe)
     fig.update_xaxes(title_text=x_axis_label)
     fig.update_yaxes(title_text=y_axis_label)
+
     if save_plot:
         fig.write_image(plot_path)
         if save_html:
@@ -166,31 +160,28 @@ def create_all_plots(model_name, data_dataframe, plot_base_path, save_plots, fil
         split:
     """
     print('.... creating return histogram')
-    title = f'Histogram of the return per episode for {model_name}'
     plot_path = os.path.join(plot_base_path, 'return_histogram.png')
-    create_histogram(data_dataframe['model_return'], title, plot_path, save_plot=save_plots, save_html=save_html)
+    create_histogram(data_dataframe['model_return'], plot_path, save_plot=save_plots, save_html=save_html)
 
     print('.... creating room guesses histogram')
-    title = f'Histogram of room guesses for {model_name}'
     plot_path = os.path.join(plot_base_path, 'hits_histogram.png')
-    create_histogram(data_dataframe['model_hits'], title, plot_path, save_plot=save_plots, save_html=save_html)
+    create_histogram(data_dataframe['model_hits'], plot_path, save_plot=save_plots, save_html=save_html)
 
     print('.... creating steps histogram')
-    title = f'Histogram of number of steps per episode for {model_name}'
     plot_path = os.path.join(plot_base_path, 'steps_histogram.png')
-    create_histogram(data_dataframe['model_steps'], title, plot_path, save_plot=save_plots, save_html=save_html)
+    create_histogram(data_dataframe['model_steps'], plot_path, save_plot=save_plots, save_html=save_html)
 
     print('.... plotting return per episode')
     plot_path = os.path.join(plot_base_path, 'return_over_episodes.png')
-    return_over_episodes(data_dataframe['model_return'], model_name, plot_path, save_plot=save_plots,
+    return_over_episodes(data_dataframe['model_return'], plot_path, save_plot=save_plots,
                          filter_return=filter_return, size=filter_size, save_html=save_html)
 
     print('.... plotting steps per episode')
     plot_path = os.path.join(plot_base_path, 'steps_over_episodes.png')
-    steps_over_episodes(data_dataframe['model_steps'], model_name, plot_path, save_plot=save_plots, save_html=save_html)
+    steps_over_episodes(data_dataframe['model_steps'], plot_path, save_plot=save_plots, save_html=save_html)
 
     print('.... plotting accuracy per episode')
     plot_path = os.path.join(plot_base_path, 'accuracy.png')
-    plot_accuracy(data_dataframe['model_hits'], model_name, plot_path, split, save_plot=save_plots, save_html=save_html)
+    plot_accuracy(data_dataframe['model_hits'], plot_path, split, save_plot=save_plots, save_html=save_html)
 
 

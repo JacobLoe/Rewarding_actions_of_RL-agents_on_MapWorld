@@ -13,7 +13,7 @@
         "reward_linear_step": 0.0,
         "reward_logistic_step": -10.0,
         "reward_wrong_action": 0.0,
-        "reward_room_selection": 2000.0,
+        "reward_room_selection": 200.0,
         "penalty_room_selection": 0.0,
         "reward_selection_by_distance": "True",
         "reward_step_function": "logistic",
