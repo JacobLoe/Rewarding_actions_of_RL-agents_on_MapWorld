@@ -1,11 +1,21 @@
 #!/bin/bash
-
-python main.py ac --parameters params/reward_funtion_r5.json --base_path results/actor_critic/2021-11-12_reward_rf5
+python main.py random --parameters params/reward_funtion_r1.json --base_path results/random/2022-01-12_r1
 echo " "
-python main.py ac --parameters params/reward_funtion_r6.json --base_path results/actor_critic/2021-11-14_reward_rf6
+python main.py random --parameters params/reward_funtion_r3.json --base_path results/random/2022-01-14_r3
 echo " "
-python main.py ac --parameters params/reward_funtion_r7.json --base_path results/actor_critic/2021-11-16_reward_rf7
+python main.py random --parameters params/reward_funtion_r5.json --base_path results/random/2022-01-16_r5
 echo " "
-python main.py ac --parameters params/reward_funtion_r8.json --base_path results/actor_critic/2021-11-18_reward_rf8
+python main.py random --parameters params/reward_funtion_r6.json --base_path results/random/2022-01-18_r6
 echo " "
-python main.py ac --parameters params/reward_funtion_r9.json --base_path results/actor_critic/2021-11-20_reward_rf9
+python main.py random --parameters params/reward_funtion_r7.json --base_path results/random/2022-01-20_r7
+echo " "
+python main.py random --parameters params/reward_funtion_r8.json --base_path results/random/2022-01-22_r8
+echo " "
+python main.py random --parameters params/reward_funtion_r3_masked.json --base_path results/random/2022-01-24_r3_masked
+echo " "
+python main.py random --parameters params/reward_funtion_r5_masked.json --base_path results/random/2022-01-26_r5_masked
+echo " "
+python main.py random --parameters params/reward_funtion_r6_masked.json --base_path results/random/2022-01-28_r6_masked
+echo " "
+python main.py random --parameters params/reward_funtion_r8_masked.json --base_path results/random/2022-01-30_r8_masked
+echo " "
