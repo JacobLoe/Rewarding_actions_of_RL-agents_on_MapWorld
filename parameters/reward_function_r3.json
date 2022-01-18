@@ -48,6 +48,6 @@
         "max_steps": 60,
         "num_episodes": 2e6,
         "checkpoint_frequency": 20000,
-        "mask_actions": "False",reward_funtion_r5.json
+        "mask_actions": "False"
     }
 }
