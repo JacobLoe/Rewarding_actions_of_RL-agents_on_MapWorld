@@ -1,0 +1,38 @@
+{
+    "MapWorld": {
+        "ade_path": "../../data/ADE20K_2021_17_01/images/ADE/training/",
+        "captions": "localized_narratives/ade20k_train_captions.json",
+        "image_height": 360,
+        "image_width": 360,
+        "images_returned_as_array": "False",
+        "m": 4,
+        "n": 4,
+        "n_rooms": 10,
+        "penalty_room_selection": 0.0,
+        "reward_constant_step": 0.0,
+        "reward_linear_step": 0.0,
+        "reward_logistic_step": 0.0,
+        "reward_room_selection": 1000.0,
+        "reward_selection_by_distance": "False",
+        "reward_step_function": "constant",
+        "reward_wrong_action": 0.0,
+        "room_repetitions": 2,
+        "room_types": 2
+    },
+    "actor_critic": {
+        "embedding_size": 384,
+        "hidden_layer_size": 100,
+        "max_sequence_length": 213,
+        "num_layers": 2,
+        "sentence_embedding_model": "paraphrase-MiniLM-L6-v2"
+    },
+    "training": {
+        "batch_size": 128,
+        "checkpoint_frequency": 20000,
+        "gamma": 0.99,
+        "learning_rate": 0.0005,
+        "mask_actions": "False",
+        "max_steps": 60,
+        "num_episodes": 2000000.0
+    }
+}

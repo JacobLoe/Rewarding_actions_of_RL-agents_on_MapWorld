@@ -1,0 +1,39 @@
+{
+    "MapWorld": {
+        "ade_path": "../../data/ADE20K_2021_17_01/images/ADE/training/",
+        "captions": "localized_narratives/ade20k_train_captions.json",
+        "image_height": 360,
+        "image_width": 360,
+        "images_returned_as_array": "False",
+        "m": 4,
+        "n": 4,
+        "n_rooms": 10,
+        "penalty_room_selection": -1000.0,
+        "reward_linear_step": -0.6666,
+        "reward_logistic_step": -10.0,
+        "reward_room_selection": 2000.0,
+        "reward_selection_by_distance": "True",
+        "reward_step": -10.0,
+        "reward_step_function": "logistic",
+        "reward_wrong_action": 0.0,
+        "room_repetitions": 2,
+        "room_types": 2
+    },
+    "random": {
+
+    },
+    "training": {
+        "batch_size": 128,
+        "checkpoint_frequency": 20000,
+        "eps_end": 0.01,
+        "eps_last_frame": 1000,
+        "eps_start": 1.0,
+        "gamma": 0.99,
+        "learning_rate": 0.0005,
+        "max_steps": 60,
+        "num_episodes": 4000000.0,
+        "replay_size": 1000,
+        "sync_rate": 10,
+        "warm_start_steps": 1000
+    }
+}
