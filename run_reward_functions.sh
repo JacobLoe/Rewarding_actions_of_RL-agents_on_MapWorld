@@ -11,7 +11,7 @@ python main.py random --parameters parameters/reward_function_r7.json --base_pat
 echo " "
 python main.py random --parameters parameters/reward_function_r8.json --base_path results/random/2022-01-22_r8
 echo " "
-python main.py random --parameters parameters/reward_funtcion_r3_masked.json --base_path results/random/2022-01-24_r3_masked
+python main.py random --parameters parameters/reward_function_r3_masked.json --base_path results/random/2022-01-24_r3_masked
 echo " "
 python main.py random --parameters parameters/reward_function_r5_masked.json --base_path results/random/2022-01-26_r5_masked
 echo " "
