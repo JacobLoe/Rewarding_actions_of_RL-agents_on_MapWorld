@@ -3,6 +3,7 @@ import plotly.express as px
 import pandas as pd
 import os
 import json
+pd.options.plotting.backend = "plotly"
 
 
 def get_data(base_path):
@@ -29,26 +30,42 @@ def get_data(base_path):
     return data_dataframe, num_episodes, plot_base_path, model_name
 
 
-def plot_accuracy(model_hits, plot_path, split=100, save_plot=True, save_html=False):
-    # compute total accuracy to four decimals
-    accuracy = np.round(np.sum(model_hits)/(len(model_hits)), decimals=4)
+def compute_split_accuracy(model_hits, split=100):
 
     # create splits of even length of the data
     split_model_hits = np.array_split(model_hits, split)
     split_size = len(split_model_hits[0])
     # compute accuracy over every split
     accuracy_per_split = [np.sum(x)/len(x) for x in split_model_hits]
+    steps = int(len(model_hits) / len(split_model_hits))
 
-    # TODO fix title
-    x_axis_label = 'Part'
+    return accuracy_per_split, steps
+
+
+def plot_individual_accuracy(model_hits, plot_path, split=100, save_plot=True, save_html=False):
+    """
+
+    Args:
+        model_hits:
+        plot_path:
+        split:
+        save_plot:
+        save_html:
+    """
+    # compute total accuracy to four decimals
+    accuracy = np.round(np.sum(model_hits)/(len(model_hits)), decimals=4)
+
+    accuracy_per_split, step = compute_split_accuracy(model_hits, split)
+
+    x_axis_label = 'Episode'
     y_axis_label = 'Accuracy'
 
-    fig = px.line(x=range(len(split_model_hits)),
+    fig = px.line(x=range(0, len(model_hits), step),
                   y=accuracy_per_split)
 
     fig.update_xaxes(title_text=x_axis_label)
     fig.update_yaxes(title_text=y_axis_label)
-    if save_plot:
+    if save_plot == 'True':
         fig.write_image(plot_path)
         if save_html:
             html_path = plot_path[:-4] + '.html'
@@ -69,7 +86,7 @@ def create_histogram(data_dataframe, plot_path='', save_plot=True, save_html=Fal
 
     # TODO where are the axis descriptions ?
     fig = px.histogram(data_dataframe)
-    if save_plot:
+    if save_plot == 'True':
         fig.write_image(plot_path)
         if save_html:
             html_path = plot_path[:-4] + '.html'
@@ -100,7 +117,7 @@ def return_over_episodes(data_dataframe, plot_path,
     fig.update_xaxes(title_text=x_axis_label)
     fig.update_yaxes(title_text=y_axis_label)
 
-    if save_plot:
+    if save_plot == 'True':
         fig.write_image(plot_path)
         if save_html:
             html_path = plot_path[:-4] + '.html'
@@ -127,7 +144,7 @@ def steps_over_episodes(data_dataframe, plot_path,
     fig.update_xaxes(title_text=x_axis_label)
     fig.update_yaxes(title_text=y_axis_label)
 
-    if save_plot:
+    if save_plot == 'True':
         fig.write_image(plot_path)
         if save_html:
             html_path = plot_path[:-4] + '.html'
@@ -136,14 +153,33 @@ def steps_over_episodes(data_dataframe, plot_path,
         fig.show()
 
 
-def multiple_plots(data_dataframe, plot_path, save_plot=True, save_html=False):
-
-    title = 'test'
-    fig = px.histogram(data_dataframe, title=title)
-    # fig.write_image(plot_path)
-    fig.update_layout(barmode='group')
-    fig.show()
-    print('d')
+def plot_group_accuracy(data_dataframe, names, step, plot_path, save_plot=True, save_html=True):
+    """
+    Creates a plot of the change in accuracy over all experiments.
+    Args:
+        save_plot: string,
+        save_html: string,
+        names: list, reward function names
+        data_dataframe: list, containing accuracy per every "step" episode
+        plot_path: string,
+        step: int,
+    """
+    data_dataframe.append(list(range(0, np.shape(data_dataframe)[1]*step, step)))
+    names.append('Episode')
+    df = pd.DataFrame(data_dataframe, names).transpose()
+    df.set_index('Episode', inplace=True, drop=True)
+    fig = df.plot()
+    x_axis_label = 'Episode'
+    y_axis_label = 'Accuracy'
+    fig.update_xaxes(title_text=x_axis_label)
+    fig.update_yaxes(title_text=y_axis_label)
+    if save_plot:
+        fig.write_image(plot_path)
+        if save_html:
+            html_path = plot_path[:-4] + '.html'
+            fig.write_html(html_path)
+    else:
+        fig.show()
 
 
 def create_all_plots(model_name, data_dataframe, plot_base_path, save_plots, filter_return, filter_size, save_html, split):
@@ -182,6 +218,6 @@ def create_all_plots(model_name, data_dataframe, plot_base_path, save_plots, fil
 
     print('.... plotting accuracy per episode')
     plot_path = os.path.join(plot_base_path, 'accuracy.png')
-    plot_accuracy(data_dataframe['model_hits'], plot_path, split, save_plot=save_plots, save_html=save_html)
+    plot_individual_accuracy(data_dataframe['model_hits'], plot_path, split, save_plot=save_plots, save_html=save_html)
 
 
