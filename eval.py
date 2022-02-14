@@ -1,8 +1,9 @@
 from utils.plots import create_all_plots, get_data, compute_split_accuracy, plot_group_accuracy
 import os
-import argparse
 import glob
+import argparse
 import numpy as np
+
 
 if __name__ == '__main__':
 
@@ -25,6 +26,7 @@ if __name__ == '__main__':
 
     df = []
     names = []
+    accuracies = []
     print(f'Found {len(parameter_jsons)} parameter files.')
     for rp in parameter_jsons:
         base_path = os.path.split(rp)[0]
@@ -32,14 +34,16 @@ if __name__ == '__main__':
         print(f'Creating plots for {model_name}')
         if not os.path.isdir(plot_base_path):
             os.makedirs(plot_base_path)
-        d, s = compute_split_accuracy(data_dataframe['model_hits'], args.split)
+        d, s, a = compute_split_accuracy(data_dataframe['model_hits'], args.split)
 
         df.append(d)
         names.append(model_name)
-        # create_all_plots(model_name, data_dataframe, plot_base_path,
-        #                  args.save_plots, args.filter_return, args.filter_size, args.save_html, args.split)
-        # print('\n')
+        accuracies.append(a)
+        create_all_plots(model_name, data_dataframe, plot_base_path,
+                         args.save_plots, args.filter_return, args.filter_size, args.save_html, args.split)
+        print('\n')
 
+    print('Create accuracy plot for all models')
     plot_group_accuracy(df, names, step=s,
                         plot_path=os.path.join(args.base_path, 'Accuracy_over_all_reward_functions.png'),
-                        save_plot=args.save_plots, save_html=args.save_html)
+                        save_plot=args.save_plots, save_html=args.save_html, accuracies=accuracies)

@@ -1,13 +1,14 @@
-from agents import random_baseline, reinforce, actor_critic, ac_IRL
+import os
+import json
+import logging
+import argparse
+import numpy as np
+
 from MapWorld import MapWorldGym
 from utils import save_parameters, save_results
-import numpy as np
-import json
-import os
-import argparse
-import logging
+from agents import random_baseline, reinforce, actor_critic, ac_IRL
 
-
+# TODO clean up
 logger = logging.getLogger(__name__)
 
 ch = logging.StreamHandler()
