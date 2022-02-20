@@ -72,8 +72,9 @@ def plot_individual_accuracy(model_hits, plot_path, split=100, save_plot=True, s
     fig = px.line(x=range(0, len(model_hits), step),
                   y=accuracy_per_split)
 
-    fig.update_xaxes(title_text=x_axis_label)
-    fig.update_yaxes(title_text=y_axis_label)
+    fig.update_xaxes(title_text=x_axis_label, showgrid=False, linecolor="#BCCCDC")
+    fig.update_yaxes(title_text=y_axis_label, showgrid=False, linecolor="#BCCCDC")
+    fig.update_layout(plot_bgcolor='#FFF')
     if save_plot:
         fig.write_image(plot_path, scale=2.0)
         if save_html:
@@ -83,10 +84,11 @@ def plot_individual_accuracy(model_hits, plot_path, split=100, save_plot=True, s
         fig.show()
 
 
-def create_histogram(data_dataframe, plot_path='', save_plot=True, save_html=False):
+def create_histogram(data_dataframe, x_axis_label, plot_path='', save_plot=True, save_html=False):
     """
 
     Args:
+        x_axis_label:
         save_html:
         data_dataframe:
         plot_path:
@@ -95,6 +97,9 @@ def create_histogram(data_dataframe, plot_path='', save_plot=True, save_html=Fal
 
     # TODO where are the axis descriptions ?
     fig = px.histogram(data_dataframe)
+    fig.update_xaxes(title_text=x_axis_label, showgrid=False, linecolor="#BCCCDC")
+    fig.update_yaxes(showgrid=False, linecolor="#BCCCDC")
+    fig.update_layout(plot_bgcolor='#FFF')
     if save_plot:
         fig.write_image(plot_path, scale=2.0)
         if save_html:
@@ -121,10 +126,11 @@ def return_over_episodes(data_dataframe, plot_path,
         data_dataframe = data_dataframe.rolling(window=size, min_periods=1, center=True).mean()
 
     x_axis_label = 'Episode'
-    y_axis_label = 'Return'
+    y_axis_label = 'Reward'
     fig = px.line(data_dataframe)
-    fig.update_xaxes(title_text=x_axis_label)
-    fig.update_yaxes(title_text=y_axis_label)
+    fig.update_xaxes(title_text=x_axis_label, showgrid=False, linecolor="#BCCCDC")
+    fig.update_yaxes(title_text=y_axis_label, showgrid=False, linecolor="#BCCCDC")
+    fig.update_layout(plot_bgcolor='#FFF')
 
     if save_plot:
         fig.write_image(plot_path, scale=2.0)
@@ -150,8 +156,9 @@ def steps_over_episodes(data_dataframe, plot_path,
     x_axis_label = 'Episode'
     y_axis_label = 'Steps per episode'
     fig = px.line(data_dataframe)
-    fig.update_xaxes(title_text=x_axis_label)
-    fig.update_yaxes(title_text=y_axis_label)
+    fig.update_xaxes(title_text=x_axis_label, showgrid=False, linecolor="#BCCCDC")
+    fig.update_yaxes(title_text=y_axis_label, showgrid=False, linecolor="#BCCCDC")
+    fig.update_layout(plot_bgcolor='#FFF')
 
     if save_plot:
         fig.write_image(plot_path, scale=2.0)
@@ -212,28 +219,28 @@ def create_all_plots(model_name, data_dataframe, plot_base_path, save_plots, fil
         split:
     """
     print('.... creating return histogram')
-    plot_path = os.path.join(plot_base_path, 'return_histogram.png')
-    create_histogram(data_dataframe['model_return'], plot_path, save_plot=save_plots, save_html=save_html)
+    plot_path = os.path.join(plot_base_path, f'{model_name}_reward_histogram.png')
+    create_histogram(data_dataframe['model_return'], 'Reward', plot_path, save_plot=save_plots, save_html=save_html)
 
     print('.... creating room guesses histogram')
-    plot_path = os.path.join(plot_base_path, 'hits_histogram.png')
-    create_histogram(data_dataframe['model_hits'], plot_path, save_plot=save_plots, save_html=save_html)
+    plot_path = os.path.join(plot_base_path, f'{model_name}_hits_histogram.png')
+    create_histogram(data_dataframe['model_hits'], 'Hits', plot_path, save_plot=save_plots, save_html=save_html)
 
     print('.... creating steps histogram')
-    plot_path = os.path.join(plot_base_path, 'steps_histogram.png')
-    create_histogram(data_dataframe['model_steps'], plot_path, save_plot=save_plots, save_html=save_html)
+    plot_path = os.path.join(plot_base_path, f'{model_name}_steps_histogram.png')
+    create_histogram(data_dataframe['model_steps'], 'Steps', plot_path, save_plot=save_plots, save_html=save_html)
 
     print('.... plotting return per episode')
-    plot_path = os.path.join(plot_base_path, 'return_over_episodes.png')
+    plot_path = os.path.join(plot_base_path, f'{model_name}_reward_over_episodes.png')
     return_over_episodes(data_dataframe['model_return'], plot_path, save_plot=save_plots,
                          filter_return=filter_return, size=filter_size, save_html=save_html)
 
     print('.... plotting steps per episode')
-    plot_path = os.path.join(plot_base_path, 'steps_over_episodes.png')
+    plot_path = os.path.join(plot_base_path, f'{model_name}_steps_over_episodes.png')
     steps_over_episodes(data_dataframe['model_steps'], plot_path, save_plot=save_plots, save_html=save_html)
 
     print('.... plotting accuracy per episode')
-    plot_path = os.path.join(plot_base_path, 'accuracy.png')
+    plot_path = os.path.join(plot_base_path, f'{model_name}_accuracy.png')
     plot_individual_accuracy(data_dataframe['model_hits'], plot_path, split, save_plot=save_plots, save_html=save_html)
 
 
