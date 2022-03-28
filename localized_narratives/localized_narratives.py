@@ -1,3 +1,9 @@
+'''
+This script goes through the specified categories of the ADE20K dataset and
+moves all images without a caption to a new folder.
+'''
+
+
 import jsonlines
 import argparse
 import json
@@ -8,9 +14,9 @@ import numpy as np
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--in_path", default='ade20k_train_captions.jsonl', help="")
-    parser.add_argument("--out_path", default='ade20k_train_captions.json', help="")
-    parser.add_argument('--ADE20K', default='../../../data/ADE20K_2021_17_01/images/ADE/training',
+    parser.add_argument("--in_path", default='localized_narratives/ade20k_train_captions.jsonl', help="")
+    parser.add_argument("--out_path", default='localized_narratives/ade20k_train_captions.json', help="")
+    parser.add_argument('--ADE20K', default='ADE20K_2021_17_01/images/ADE/training',
                         help='')
     args = parser.parse_args()
 
@@ -87,7 +93,7 @@ if __name__ == '__main__':
 
         path.extend(glob.glob(pa, recursive=True))
 
-    print(len(path))
+    print(f'The categories include {len(path)} images to be checked for captions')
 
     op = os.path.join(os.path.split(args.ADE20K)[0], 'no_caption')
 
@@ -103,4 +109,4 @@ if __name__ == '__main__':
             i += 1
             nc_path = os.path.join(op, im)
             os.rename(p, nc_path)
-    print(f'{i} images have been moved to {op}')
+    print(f'{i} images with no captions have been found and moved to {op}')

@@ -5,6 +5,5 @@ The .json contains the name of an image and the corresponding caption.
 
 `split_captions.py` creates a .json-file from localized narratives where the captions for each image are split up into individual sentences. 
 The split up captions are generated with ... 
-#TODO cite Raunak
 
 
