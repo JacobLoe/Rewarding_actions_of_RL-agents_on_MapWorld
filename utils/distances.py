@@ -7,13 +7,11 @@ import torchvision.models as models
 from torchvision import transforms
 import glob
 import os
-# from utils import create_histogram
 import numpy as np
 import pickle
 import random
 import plotly.express as px
 import pandas as pd
-import multiprocessing
 
 
 def create_histogram(data, title, plot_path='', save_plot=True, save_html=False):
@@ -26,13 +24,14 @@ def create_histogram(data, title, plot_path='', save_plot=True, save_html=False)
         plot_path:
         save_plot:
     """
-    # TODO better title
-    title = f'Counts of {title}'
 
     df = pd.DataFrame(data)
     fig = px.histogram(df, title=title)
+    fig.update_xaxes(title_text='normalized distance', showgrid=False, linecolor="#BCCCDC")
+    fig.update_yaxes(showgrid=False, linecolor="#BCCCDC")
+    fig.update_layout(plot_bgcolor='#FFF')
     if save_plot:
-        fig.write_image(plot_path)
+        fig.write_image(plot_path, scale=2.0)
         if save_html:
             html_path = plot_path[:-4] + '.html'
             fig.write_html(html_path)
@@ -121,7 +120,7 @@ if __name__ == '__main__':
                      'urban/convenience_store__outdoor', 'urban/bistro__outdoor',
                      'urban/inn__outdoor', 'urban/library__outdoor']
 
-    base_path = '../../data/ADE20K_2021_17_01/images/ADE/training/'
+    base_path = 'ADE20K_2021_17_01/images/ADE/training/'
 
     image_path = []
     numpy_path = []
@@ -144,7 +143,7 @@ if __name__ == '__main__':
         pa = os.path.join(base_path, p, '**/*.npy')
         numpy_path.extend(glob.glob(pa, recursive=True))
 
-    print('number of distractor_cats', len(image_path), len(numpy_path))
+    print('number of target_cats + distractor_cats', len(image_path), len(numpy_path))
 
     for p in _outdoor_cats:
 
@@ -154,14 +153,14 @@ if __name__ == '__main__':
         pa = os.path.join(base_path, p, '**/*.npy')
         numpy_path.extend(glob.glob(pa, recursive=True))
 
-    print('number of outdoor_cats', len(image_path), len(numpy_path))
+    print('number of target_cats + distractor_cats + outdoor_cats', len(image_path), len(numpy_path))
 
     # compute the distances between the features to get the mean and max distance
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     inception = load_inception(device)
 
     pickled_dists = 'utils/distances.pkl'
-    sample_size = 100
+    sample_size = 1000#7917
 
     if not len(image_path) == len(numpy_path):
         dists = []
@@ -217,5 +216,12 @@ if __name__ == '__main__':
         print('dists', type(dists), np.shape(dists))
 
     print('min, max, mean, std', np.min(dists), np.max(dists), np.mean(dists), np.std(dists))
-    title = f'Distances for {sample_size} features to every other feature. Mean: {np.mean(dists)}, Max: {np.max(dists)}, Min: {np.min(dists)}'
-    create_histogram(dists, title, plot_path='utils/dists.png', save_plot=False)
+
+    dists = (np.array(dists)-15.956363)/30.135202
+
+    title = f'Distances for {sample_size} randomly chosen images to every other image. ' \
+            f'<br>Mean: {np.round(np.mean(dists), decimals=4)}, ' \
+            f'<br>Max: {np.round(np.max(dists), decimals=4)}, ' \
+            f'Min: {np.round(np.min(dists), decimals=4)}, '
+
+    create_histogram(dists, title, plot_path='utils/dists.png', save_plot=True)

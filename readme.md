@@ -6,9 +6,12 @@ conda env create -f environment.yml
 conda activate mapworld
 ```
 
-Before running the code two scripts have to be run first:
+Download the ADE20K dataset and extract its content into the project folder,
+The used version of ADE20K is 2021_17_01.
+
+Before running the main script two scripts have to be run first:
 
 ```
 python localized_narratives/localized_narratives.py
-python utils/dists.py
+python utils/distances.py
 ```

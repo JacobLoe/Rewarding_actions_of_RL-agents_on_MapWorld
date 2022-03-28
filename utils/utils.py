@@ -54,6 +54,9 @@ def preprocess_mapworld_state(state, em_model):
 
 
 class CategoricalMasked(Categorical):
+    '''
+    Adapted from https://boring-guy.sh/posts/masking-rl/
+    '''
     def __init__(self, logits: torch.Tensor, mask: Optional[torch.Tensor] = None):
         self.mask = mask
         self.batch, self.nb_action = logits.size()

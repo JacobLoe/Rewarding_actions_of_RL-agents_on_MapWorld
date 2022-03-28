@@ -14,7 +14,7 @@ import time
 class MapWorldGym(Env):
 
     def __init__(self, n=4, m=4, n_rooms=10, room_types=2, room_repetitions=2,
-                 ade_path='../../data/ADE20K_2021_17_01/images/ADE/training/',
+                 ade_path='./ADE20K_2021_17_01/images/ADE/training/',
                  image_resolution=(360, 360),
                  captions="./localized_narratives/ade20k_train_captions.json",
                  reward_constant_step=-10.0,
@@ -55,7 +55,7 @@ class MapWorldGym(Env):
 
         self.image_resolution = image_resolution
 
-        # maps the actions actions input into MapWorldGym to actions that are interpretable by MapWorld
+        # maps the actions input into MapWorldGym to actions that are interpretable by MapWorld
         self.actions = {0: 'north', 1: 'east', 2: 'south', 3: 'west', 4: 'select_room'}
         self.action_space = spaces.Discrete(len(self.actions))
 
@@ -249,8 +249,9 @@ class MapWorldGym(Env):
 
         # distances follow a gaussian distribution
         distance = euclidean_distances(feature_target, feature_current)[0][0]
-        # normalize distance, subtract mean, divide by maximum
-        # mean and max distance were computed from the distance of all images to other image
+        # normalize distance by subtracting the mean and divide by maximum distance
+        # mean and max distance were computed from the distance of all images to all other images
+        # see distances.py in /utils
         # additionally the sign is switched to map the minimum distance value to the maximum reward
         normalized_distance = -(distance-15.956363)/30.135202     # range -0.5 to 0.5, mean is 0
 
