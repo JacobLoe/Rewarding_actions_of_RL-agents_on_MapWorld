@@ -16,8 +16,10 @@ if __name__ == '__main__':
                         help='Use --save_html '' to save the plots as html in addition to the .png-file')
     parser.add_argument('--filter_return', type=bool, default=True,
                         help='Sets whether to apply a moving average to the return of the model')
-    parser.add_argument('--filter_size', type=int, default=50000, help='Sets the size of the moving average filter')
-    parser.add_argument('--split', type=int, default=100, help='Defines how often the accuracy is calculated ...')
+    parser.add_argument('--filter_size', type=int, default=50000, help='Sets the size of the moving average filter. '
+                                                                       'Default: 50000')
+    parser.add_argument('--split', type=int, default=100, help='Defines how often the accuracy is calculated. '
+                                                               'Default: 100')
     args = parser.parse_args()
 
     print(f'Collecting parameter json-files in directory: "{args.base_path}"\n')

@@ -10,6 +10,8 @@ import json
 import glob
 import os
 import numpy as np
+import plotly.express as px
+from sklearn.feature_extraction.text import CountVectorizer
 
 if __name__ == '__main__':
 
@@ -20,17 +22,13 @@ if __name__ == '__main__':
                         help='')
     args = parser.parse_args()
 
+    # transform jsonlines file into a json file with only the imagee id and the caption
     localized_narratives = {}
     with jsonlines.open(args.in_path, mode='r') as f:
         for line in f:
             image_name = line['image_id']
             caption = line['caption']
             localized_narratives[image_name] = caption
-
-    c = [len(localized_narratives[k].split()) for k in localized_narratives]
-    print(f'Min caption length {np.min(c)}')
-    print(f'Max caption length {np.max(c)}')
-    print(f'Mean caption length {np.mean(c)}')
 
     with open(args.out_path, 'w') as f:
         json.dump(localized_narratives, f, sort_keys=True)
@@ -100,13 +98,67 @@ if __name__ == '__main__':
     if not os.path.isdir(op):
         os.makedirs(op)
 
+    new_captions = []
     i = 0
     for p in path:
         im = os.path.split(p)[1]
         try:
             c = g[im.strip('.jpg')]
+            new_captions.append(c)
         except:
             i += 1
             nc_path = os.path.join(op, im)
-            os.rename(p, nc_path)
+        #     os.rename(p, nc_path)
     print(f'{i} images with no captions have been found and moved to {op}')
+
+    print('len all captions', len(g))
+    vectorizer = CountVectorizer()
+    vectorizer.fit_transform(g.values())
+    print('Vocabulary size all captions', len(vectorizer.vocabulary_))
+
+    c = [len(localized_narratives[k].split()) for k in localized_narratives]
+    print(f'Min caption length {np.min(c)}')
+    print(f'Max caption length {np.max(c)}')
+    print(f'Mean caption length {np.mean(c)}')
+    print(f'Median caption length {np.median(c)}')
+
+    for k in localized_narratives.values():
+        if len(k.split()) == 5:
+            print(k)
+            break
+    for k in localized_narratives.values():
+        if len(k.split()) == 37:
+            print(k)
+            break
+
+    fig = px.histogram(c, title='Histogram of caption lengths for ADE20K')
+    fig.update_xaxes(title_text='Caption length', showgrid=False, linecolor="#BCCCDC")
+    fig.update_yaxes(showgrid=False, linecolor="#BCCCDC")
+    fig.update_layout(plot_bgcolor='#FFF', showlegend=False)
+    fig.write_image('caption_length_ADE20K.png', scale=2.0)
+
+    print('\nlen captions for MapWorld', len(new_captions))
+    vectorizer = CountVectorizer()
+    vectorizer.fit_transform(new_captions)
+    print('Vocabulary size MapWorld captions', len(vectorizer.vocabulary_))
+
+    c = [len(k.split()) for k in new_captions]
+    print(f'Min caption length {np.min(c)}')
+    print(f'Max caption length {np.max(c)}')
+    print(f'Mean caption length {np.mean(c)}')
+    print(f'Median caption length {np.median(c)}')
+
+    for k in new_captions:
+        if len(k.split()) == 7:
+            print(k)
+            break
+    for k in new_captions:
+        if len(k.split()) == 45:
+            print(k)
+            break
+
+    fig = px.histogram(c, title='Histogram of caption lengths for MapWorld')
+    fig.update_xaxes(title_text='Caption length', showgrid=False, linecolor="#BCCCDC")
+    fig.update_yaxes(showgrid=False, linecolor="#BCCCDC")
+    fig.update_layout(plot_bgcolor='#FFF', showlegend=False)
+    fig.write_image('caption_length_MapWorld.png', scale=2.0)
