@@ -15,3 +15,10 @@ Before running the main script two scripts have to be run first:
 python localized_narratives/localized_narratives.py
 python utils/distances.py
 ```
+
+An experiment with an actor-critic (or random) agent and reward function r_5 can be started with the following commands:
+```
+python main.py ac --parameters parameters/reward_function_r5.json --base_path results/actor-crtic/test_r5
+
+python main.py random --parameters parameters/reward_function_r5.json --base_path results/random/test_r5
+```
