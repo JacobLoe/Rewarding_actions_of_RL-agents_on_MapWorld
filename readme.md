@@ -7,7 +7,15 @@ conda activate mapworld
 ```
 
 Download the ADE20K dataset and extract its content into the project folder,
-The used version of ADE20K is 2021_17_01.
+The directory structure of the dataset is shown below:
+```
+ADE20K_2021_17_01
+├── images
+│   ├── ADE
+│   │   ├── training
+│   │   ├── validation
+```
+The used version of ADE20K is 2021_17_01. 
 
 Before running the main script two scripts have to be run first:
 

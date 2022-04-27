@@ -108,7 +108,7 @@ if __name__ == '__main__':
         except:
             i += 1
             nc_path = os.path.join(op, im)
-        #     os.rename(p, nc_path)
+            os.rename(p, nc_path)
     print(f'{i} images with no captions have been found and moved to {op}')
 
     print('len all captions', len(g))
