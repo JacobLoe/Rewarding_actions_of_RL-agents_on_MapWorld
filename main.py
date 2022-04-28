@@ -37,7 +37,7 @@ if __name__ == '__main__':
                         help='')
     parser.add_argument('--load_checkpoint', type=bool, default='',
                         help='If set to True, parameters and checkpoints are loaded from args.base_path. Default is False')
-    parser.add_argument('--gpu', default='cuda:0', help='')
+    parser.add_argument('--gpu', default='cuda', help='')
     args = parser.parse_args()
 
     # set log level according to command line
