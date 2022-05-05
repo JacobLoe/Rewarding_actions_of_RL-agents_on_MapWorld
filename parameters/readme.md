@@ -4,8 +4,9 @@ Contains the parameter json-files for each reward function.
 
 
 # Parameters for MapWorld
+These values set the properties of all maps.
 ```
-    "ade_path": "../../data/ADE20K_2021_17_01/images/ADE/training/",
+    "ade_path": "ADE20K_2021_17_01/images/ADE/training/",
     "captions": "localized_narratives/ade20k_train_captions.json",
     "image_height": 360,
     "image_width": 360,
@@ -15,7 +16,8 @@ Contains the parameter json-files for each reward function.
     "room_repetitions": 2,
     "room_types": 2,
 ```
-These values set the properties of all maps.
+
+These values set the properties of the reward function.
 ```
     "reward_constant_step": -10.0,
     "reward_linear_step": -0.6666,
@@ -50,7 +52,3 @@ It is set to return a `pillow object` per default
 ```
 
 A `batch_size` of 32 is the (stable) maximum for Actor-Critic.
-
-# new architecture (16.09.2021)
-
-actor-critic, inception + sentence embeddings, data-parallel, 4M episodes, 128 batch size ~ 71 hours of training

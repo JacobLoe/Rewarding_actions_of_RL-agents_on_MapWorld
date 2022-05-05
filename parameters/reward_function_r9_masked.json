@@ -1,6 +1,6 @@
 {
     "MapWorld": {
-        "ade_path": "../../data/ADE20K_2021_17_01/images/ADE/training/",
+        "ade_path": "ADE20K_2021_17_01/images/ADE/training/",
         "image_height": 360,
         "image_width": 360,
         "m": 4,
