@@ -8,17 +8,16 @@ dependencies:
   - cudatoolkit=10.1
   - pytorch-gpu
   - torchvision
-  - pytorch-lightning
   - matplotlib
   - networkx=2.2
   - pip=21.0.1
   - transitions=0.8.7
   - tqdm
-  - transformers
+  - transformers=4.8.2
   - plotly
   - python-kaleido
   - pandas
-  - sentence-transformers
+  - sentence-transformers=2.0.0
   - jsonlines
   - einops
   - pip:
