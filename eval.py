@@ -20,6 +20,7 @@ if __name__ == '__main__':
                                                                        'Default: 50000')
     parser.add_argument('--split', type=int, default=100, help='Defines how often the accuracy is calculated. '
                                                                'Default: 100')
+    parser.add_argument('--plot_group', type=bool, default=False)
     args = parser.parse_args()
 
     print(f'Collecting parameter json-files in directory: "{args.base_path}"\n')
@@ -45,7 +46,8 @@ if __name__ == '__main__':
                          args.save_plots, args.filter_return, args.filter_size, args.save_html, args.split)
         print('\n')
 
-    print('Create accuracy plot for all models')
-    plot_group_accuracy(df, names, step=s,
-                        plot_path=os.path.join(args.base_path, 'Accuracy_over_all_reward_functions.png'),
-                        save_plot=args.save_plots, save_html=args.save_html, accuracies=accuracies)
+    if args.plot_group:
+        print('Create accuracy plot for all models')
+        plot_group_accuracy(df, names, step=s,
+                            plot_path=os.path.join(args.base_path, 'Accuracy_over_all_reward_functions.png'),
+                            save_plot=args.save_plots, save_html=args.save_html, accuracies=accuracies)
