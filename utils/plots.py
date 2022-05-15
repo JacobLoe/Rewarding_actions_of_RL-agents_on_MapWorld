@@ -17,6 +17,8 @@ def get_data(base_path):
     model_hits = np.load(os.path.join(base_path, 'model_hits.npy'))
     model_steps = np.load(os.path.join(base_path, 'model_steps.npy'))
 
+    print('shape model_return, model_hits, model_steps: ', np.shape(model_return), np.shape(model_hits), np.shape(model_steps))
+
     with open(os.path.join(base_path, 'model_parameters.json'), 'r') as fp:
         parameters = json.load(fp)
     num_episodes = parameters['training']['num_episodes']
@@ -28,6 +30,70 @@ def get_data(base_path):
     data_dict = {'model_return': model_return, 'model_steps': model_steps, 'model_hits': model_hits}
     data_dataframe = pd.DataFrame(data_dict)
     return data_dataframe, num_episodes, plot_base_path, model_name
+
+
+def aggregate_and_plot_r1_data(split, filter_return, size):
+    """
+    Loads the data. Assumes base_path is structured like: "results/**/**/raw"
+    Args:
+        base_path: string, path to folder where the data is saved to
+    Returns: Results (return, steps, hits) as numpy arrays,
+    """
+    mr_list = []
+    # mh_list = []
+    ms_list = []
+    acc_list = []
+    for p in ['results/actor_critic/2022-03-28_r1_masked_2M',
+              'results/actor_critic/2022-04-27_r1_masked_1',
+              'results/actor_critic/2022-04-29_r1_masked_2',
+              'results/actor_critic/2022-04-30_r1_masked_3',
+              'results/actor_critic/2021-11-01_r1_masked']:
+        model_return = np.load(os.path.join(p, 'model_return.npy'))
+        model_hits = np.load(os.path.join(p, 'model_hits.npy'))
+        model_steps = np.load(os.path.join(p, 'model_steps.npy'))
+        mr_list.append(model_return)
+        # mh_list.append(model_hits)
+        ms_list.append(model_steps)
+        accuracy_per_split, step, _ = compute_split_accuracy(model_hits, split)
+        acc_list.append(accuracy_per_split)
+
+    # print('shape mr, mh, ms: ', np.shape(mr_list), np.shape(mh_list), np.shape(ms_list))
+    model_return = np.mean(mr_list, axis=0)
+    # model_hits = np.mean(mh_list, axis=0)
+    model_steps = np.mean(ms_list, axis=0)
+    acc_list = np.mean(acc_list, axis=0)
+
+    print('shape model_return, model_hits, model_steps: ', np.shape(model_return), np.shape(model_hits), np.shape(model_steps))
+
+    with open(os.path.join(p, 'model_parameters.json'), 'r') as fp:
+        parameters = json.load(fp)
+    # num_episodes = parameters['training']['num_episodes']
+
+    # model_name = [n for n in parameters.keys() if n != 'MapWorld' and n != 'training'][0] + os.path.split(p)[1][10:]
+
+    data_dict = {'model_return': model_return, 'model_steps': model_steps, 'model_hits': model_hits}
+    data_dataframe = pd.DataFrame(data_dict)
+
+    fig = px.line(x=range(0, len(model_hits), step),
+                  y=acc_list)
+
+    legend = f'Mean accuracy: {np.round(np.mean(accuracy_per_split), decimals=4)}'
+    fig.update_xaxes(title_text='Episode', showgrid=False, linecolor="#BCCCDC")
+    fig.update_yaxes(title_text='Accuracy', showgrid=False, linecolor="#BCCCDC")
+    fig.update_layout(plot_bgcolor='#FFF', title=legend)
+    fig.write_image('results/aggregated_accuracy_r1.png', scale=2.0)
+
+    if filter_return:
+        data_dataframe = data_dataframe.rolling(window=size, min_periods=1, center=True).mean()
+
+    x_axis_label = 'Episode'
+    y_axis_label = 'Reward'
+    fig = px.line(data_dataframe['model_return'])
+    fig.update_xaxes(title_text=x_axis_label, showgrid=False, linecolor="#BCCCDC")
+    fig.update_yaxes(title_text=y_axis_label, showgrid=False, linecolor="#BCCCDC")
+    fig.update_layout(plot_bgcolor='#FFF')
+
+    fig.write_image('results/aggregated_reward_r1.png', scale=2.0)
 
 
 def compute_split_accuracy(model_hits, split=100):
