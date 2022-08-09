@@ -1,4 +1,7 @@
 # Rewarding action of RL-agents on MapWorld
+
+Trains and evaluates a reinforcement learning agent in moving through a graph, conditioned only on textual descriptions and images at each node on the grpah. For further information refer to the `IM_report.pdf`.
+
 Create and activate conda environment 
 (Tested with Anaconda version 4.10.1):
 ```
